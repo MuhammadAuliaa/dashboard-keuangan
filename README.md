@@ -65,7 +65,7 @@ http://127.0.0.1:5000/
 ---
 
 ## Thanks for using this project—consider supporting & buy me a coffe 🙌🏻
-- BCA: 6801800626
-- BNI: 1561114751
+- BCA: 6801800626 (Muhammad Aulia)
+- BNI: 1561114751 (Muhammad Aulia)
 
 ---
