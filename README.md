@@ -1,4 +1,4 @@
-# Financial Architect – Dashboard Tabungan (Flask)
+# Deiy Finance - Dashboard Tabungan 
 
 Dashboard Tabungan adalah aplikasi manajemen keuangan pribadi berbasis web yang dibangun dengan Python (Flask). Dirancang untuk membantu kamu mencatat, memantau, dan menganalisis kondisi keuangan secara menyeluruh — mulai dari pemasukan dan pengeluaran harian, hingga progres target tabungan jangka panjang.
 Semua data disimpan secara lokal dalam format .xlsx, sehingga tidak memerlukan koneksi internet maupun akun tambahan. Cukup jalankan di komputer sendiri dan data kamu tetap aman tersimpan.
@@ -61,5 +61,11 @@ http://127.0.0.1:5000/
 - Edit goal yang sudah ada
 - Hapus goal
 - Data goals tersimpan di file .xlsx tersendiri dan dinamis
+
+---
+
+## Thanks for using this project—consider supporting & buy me a coffe 🙌🏻
+- BCA: 6801800626
+- BNI: 1561114751
 
 ---
