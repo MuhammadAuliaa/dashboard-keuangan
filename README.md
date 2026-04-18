@@ -23,19 +23,32 @@ Mac: python3 app.py
 ### 3️⃣ Akses di Browser
 http://127.0.0.1:5000/
 
-## Fitur Dashboard
+## Fitur Aplikasi 
 
-- **Total Tabungan** – balance utama dengan progress bar
-- **3 Stat Cards** – Total / Active / Completed goals
-- **Analytics Chart** – Area chart 8 bulan (Chart.js)
-- **Recent Activity** – Tabel dengan filter Newest / Active
-- **Monthly Goal** – Progress bulanan + avg daily + forecast
-- **Upcoming Deadlines** – 3 goals terdekat deadline-nya
-- **Add Funds Modal** – Form tambah dana via API `/api/add-funds`
-- **Toast Notification** – Feedback sukses/gagal
+**Dashboard**
+- Card ringkasan: total tabungan, target tabungan, pemasukan, pengeluaran
+- Edit target maksimal tabungan
+- Edit & reset "sudah ditabung bulan ini"
+- Grafik analitik pemasukan & pengeluaran bulanan per tahun
+- Filter tahun dinamis (relatif dari data yang ada)
+- Histori transaksi terbaru (pagination, maks 5 rows, hanya kategori Tabungan)
+- Tombol filter mode grafik: pemasukan / pengeluaran / keduanya
 
+**Transaksi**
+- Tabel transaksi dengan pagination (maks 20 rows per halaman)
+- Input transaksi baru: period, category, subcategory, description, IDR, accounts, amount, income/expense, note
+- Auto-fill field accounts, IDR, amount saat input nominal
+- Edit data transaksi (pop up dengan tombol simpan)
+- Hapus data transaksi (per baris)
+- Filter tampilan: pemasukan / pengeluaran
+- Data tersimpan otomatis ke file .xlsx lokal
 
-> ⚠️ Hasil prediksi bersifat informatif dan **tidak menggantikan diagnosis dokter gigi**.
+**Target Tabungan (Savings Goals)**
+- Daftar goals dengan progress bar
+- Buat goal baru: nama, target nominal, opsional persentase dari tabungan
+- Edit goal yang sudah ada
+- Hapus goal
+- Data goals tersimpan di file .xlsx tersendiri dan dinamis
 
 ---
 
