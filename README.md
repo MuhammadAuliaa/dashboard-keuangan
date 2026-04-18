@@ -15,9 +15,10 @@ Ikuti langkah-langkah berikut untuk menjalankan sistem di lokal:
 ### 1️⃣ Install Dependencies
 pip install -r requirements.txt
 
-
 ### 2️⃣ Jalankan Aplikasi
-python app.py
+Windows: python app.py
+
+Mac: python3 app.py
 
 ### 3️⃣ Akses di Browser
 http://127.0.0.1:5000/
