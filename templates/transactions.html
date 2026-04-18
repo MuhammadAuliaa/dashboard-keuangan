@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html class="dark" lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Financial Architect – Transaksi</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config={darkMode:"class",theme:{extend:{colors:{
+      "primary":"#00A86B","background":"#0A0A0A","surface":"#121212",
+      "surface-variant":"#1E1E1E","surface-container-high":"#2C2C2C",
+      "on-surface":"#e5e2e1","on-surface-variant":"#A0A0A0",
+      "outline-variant":"#2C2C2C","error":"#FF4D4D","warning":"#F59E0B",
+    },fontFamily:{headline:["Manrope","sans-serif"],body:["Inter","sans-serif"]}}}}
+  </script>
+  <style>
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle;}
+    body{font-family:'Manrope',sans-serif;}
+    .drop-zone{border:2px dashed rgba(0,168,107,0.35);transition:border-color .2s,background .2s;}
+    .drop-zone.drag-over{border-color:#00A86B;background:rgba(0,168,107,0.06);}
+    .table-wrap{overflow-x:auto;}
+    .table-wrap table{min-width:600px;}
+  </style>
+</head>
+<body class="bg-background text-on-surface flex min-h-screen">
+
+<!-- SIDEBAR -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-background flex flex-col py-8 px-6 z-50" style="border-right:1px solid rgba(44,44,44,0.4);">
+  <div class="mb-10 px-4">
+    <h1 class="text-xl font-bold tracking-tight font-headline">Deinony Apps</h1>
+    <p class="text-[10px] font-bold tracking-widest text-on-surface/40 uppercase mt-1">By. Ade Aulia</p>
+  </div>
+  <nav class="flex-1 space-y-2">
+    <a href="/" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface/60 font-medium hover:bg-surface-variant hover:text-on-surface transition-all">
+      <span class="material-symbols-outlined text-sm">dashboard</span><span class="text-sm">Dashboard</span>
+    </a>
+    <a href="/transactions" class="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all" style="color:#00A86B;background-color:rgba(0,168,107,0.10);font-weight:700;">
+      <span class="material-symbols-outlined text-sm">receipt_long</span><span class="text-sm">Transaksi</span>
+    </a>
+    <a href="/savings-goals" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface/60 font-medium hover:bg-surface-variant hover:text-on-surface transition-all">
+      <span class="material-symbols-outlined text-sm">savings</span><span class="text-sm">Target Tabungan</span>
+    </a>
+  </nav>
+  <div class="mt-auto space-y-6">
+    <a href="/" class="w-full py-3 px-4 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center space-x-2">
+      <span class="material-symbols-outlined" style="font-size:18px;">arrow_back</span><span>Kembali</span>
+    </a>
+    <div class="pt-6 space-y-2" style="border-top:1px solid rgba(44,44,44,0.4);">
+      <a href="#" class="flex items-center space-x-3 px-4 py-2 text-on-surface/60 font-medium hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-sm">settings</span><span class="text-sm">Pengaturan</span>
+      </a>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="flex-1 ml-64 min-h-screen">
+
+  <!-- Header -->
+  <header class="w-full px-10 py-8 flex items-center justify-between sticky top-0 z-40 bg-background/80 backdrop-blur-md" style="border-bottom:1px solid rgba(44,44,44,0.3);">
+    <div>
+      <h2 class="text-3xl font-bold font-headline">Histori Transaksi</h2>
+      <p class="text-xs text-on-surface-variant mt-1">Import & kelola data dari file Excel (.xlsx)</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      {% if rows %}
+      <!-- Download Button (top right) -->
+      <a href="/transactions/download"
+         class="flex items-center space-x-2 px-4 py-2 rounded-lg font-bold text-xs transition-colors"
+         style="background:rgba(0,168,107,0.12);color:#00A86B;border:1px solid rgba(0,168,107,0.25);"
+         onmouseover="this.style.background='rgba(0,168,107,0.2)'"
+         onmouseout="this.style.background='rgba(0,168,107,0.12)'">
+        <span class="material-symbols-outlined" style="font-size:16px;">download</span>
+        <span>Download Excel</span>
+      </a>
+      {% endif %}
+      <div class="w-8 h-8 rounded-full overflow-hidden" style="border:1px solid rgba(44,44,44,0.6);">
+        <img class="w-full h-full object-cover" src="{{ data.user.avatar }}" alt=""/>
+      </div>
+    </div>
+  </header>
+
+  <div class="px-10 pb-10 pt-8 space-y-8">
+
+    {% if success %}
+    <div class="flex items-center space-x-3 px-5 py-4 rounded-xl" style="background:rgba(0,168,107,0.1);border:1px solid rgba(0,168,107,0.25);">
+      <span class="material-symbols-outlined text-primary">check_circle</span>
+      <p class="text-sm font-semibold text-primary">Berhasil mengimpor <strong>{{ success }}</strong> baris data dari file Excel.</p>
+    </div>
+    {% endif %}
+    {% if error %}
+    <div class="flex items-center space-x-3 px-5 py-4 rounded-xl" style="background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.25);">
+      <span class="material-symbols-outlined text-error">error</span>
+      <p class="text-sm font-semibold text-error">{{ error }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Upload Card -->
+    <div class="bg-surface rounded-2xl p-8" style="border:1px solid rgba(44,44,44,0.25);">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h3 class="text-lg font-bold font-headline">Import Data Excel</h3>
+          <p class="text-xs text-on-surface-variant mt-1">Upload file .xlsx dengan header di baris pertama</p>
+        </div>
+        <span class="material-symbols-outlined text-primary">upload_file</span>
+      </div>
+
+      <form method="POST" action="/transactions/upload" enctype="multipart/form-data" id="upload-form">
+        <div id="drop-zone"
+             class="drop-zone rounded-xl p-12 flex flex-col items-center justify-center cursor-pointer"
+             onclick="document.getElementById('file-input').click()"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleDrop(event)">
+          <span class="material-symbols-outlined text-primary mb-4" style="font-size:48px;font-variation-settings:'FILL' 0;">table_view</span>
+          <p class="text-sm font-bold mb-1">Drag & drop file Excel di sini</p>
+          <p class="text-xs text-on-surface-variant mb-4">atau klik untuk memilih file</p>
+          <span class="text-[10px] font-bold px-3 py-1.5 rounded-full" style="background:rgba(0,168,107,0.1);color:#00A86B;">Mendukung .xlsx dan .xls</span>
+          <input type="file" id="file-input" name="file" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(this)"/>
+        </div>
+
+        <div id="file-preview" class="hidden mt-4 flex items-center justify-between px-4 py-3 rounded-xl" style="background:#1A1A1A;border:1px solid rgba(44,44,44,0.35);">
+          <div class="flex items-center space-x-3">
+            <span class="material-symbols-outlined text-primary text-sm">description</span>
+            <div>
+              <p id="file-name" class="text-sm font-bold"></p>
+              <p id="file-size" class="text-[10px] text-on-surface-variant"></p>
+            </div>
+          </div>
+          <button type="submit" class="px-5 py-2 bg-primary text-black text-xs font-bold rounded-lg hover:opacity-90 transition-opacity">
+            Upload & Import
+          </button>
+        </div>
+      </form>
+
+      <div class="mt-6 p-4 rounded-xl" style="background:#0f0f0f;border:1px solid rgba(44,44,44,0.2);">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-3">Format Excel yang didukung</p>
+        <div class="grid grid-cols-3 gap-3 text-[10px] text-on-surface-variant">
+          <div class="flex items-center space-x-2"><span class="material-symbols-outlined text-primary" style="font-size:14px;">check</span><span>Baris pertama = header kolom</span></div>
+          <div class="flex items-center space-x-2"><span class="material-symbols-outlined text-primary" style="font-size:14px;">check</span><span>Kolom bebas (Tanggal, Nominal, dll)</span></div>
+          <div class="flex items-center space-x-2"><span class="material-symbols-outlined text-primary" style="font-size:14px;">check</span><span>Baris kosong otomatis diabaikan</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    {% if rows %}
+    <div class="bg-surface rounded-2xl overflow-hidden" id="data-table-section" style="border:1px solid rgba(44,44,44,0.25);">
+      <div class="px-8 py-6 flex items-center justify-between" style="border-bottom:1px solid rgba(44,44,44,0.25);">
+        <div class="flex items-center space-x-2">
+          <h4 class="text-lg font-bold font-headline">Data Transaksi</h4>
+          <span class="text-xs text-on-surface-variant">({{ rows|length }} baris)</span>
+        </div>
+        <div class="flex items-center space-x-3">
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant" style="font-size:14px;">search</span>
+            <input id="tbl-search" oninput="filterTable(this.value)" placeholder="Filter data..." type="text"
+                   class="bg-surface-variant rounded-lg pl-9 pr-4 py-2 text-xs w-48 focus:outline-none focus:ring-1 focus:ring-primary border-none text-on-surface"/>
+          </div>
+          <!-- Download button inside table header too -->
+          <a href="/transactions/download"
+             class="flex items-center space-x-1.5 px-3 py-2 rounded-lg font-bold text-xs transition-colors"
+             style="background:rgba(0,168,107,0.1);color:#00A86B;">
+            <span class="material-symbols-outlined" style="font-size:14px;">download</span>
+            <span>Download</span>
+          </a>
+          <button onclick="openAddManualModal()"
+                  class="flex items-center space-x-1.5 px-3 py-2 rounded-lg font-bold text-xs transition-colors"
+                  style="background:rgba(0,168,107,0.15);color:#00A86B;border:1px solid rgba(0,168,107,0.3);">
+            <span class="material-symbols-outlined" style="font-size:14px;">add</span>
+            <span>Tambah Manual</span>
+          </button>
+          <form method="POST" action="/transactions/clear" onsubmit="return confirm('Hapus semua data?')">
+            <button type="submit" class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-error text-xs font-bold hover:bg-error/10 transition-colors">
+              <span class="material-symbols-outlined" style="font-size:14px;">delete_sweep</span>
+              <span>Hapus Semua</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="w-full text-left" id="data-table">
+          <thead class="bg-background text-[10px] uppercase tracking-widest text-on-surface-variant">
+            <tr>
+              <th class="px-6 py-4 font-semibold">#</th>
+              {% for col in rows[0].keys() %}
+              <th class="px-6 py-4 font-semibold cursor-pointer hover:text-primary transition-colors" onclick="sortTable('{{ col }}')">
+                {{ col }}
+                <span class="material-symbols-outlined" style="font-size:10px;vertical-align:middle;">unfold_more</span>
+              </th>
+              {% endfor %}
+              <th class="px-6 py-4 font-semibold text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="data-tbody" class="divide-y divide-outline-variant/10">
+            {% for i, row in rows | enumerate %}
+            <tr class="hover:bg-white/5 transition-colors" data-row="{{ i }}" data-index="{{ i }}">
+              <td class="px-6 py-4 text-[10px] text-on-surface-variant">{{ i + 1 }}</td>
+              {% for val in row.values() %}
+              <td class="px-6 py-4 text-xs">
+                {% if val is none %}<span class="text-on-surface-variant">—</span>{% else %}{{ val }}{% endif %}
+              </td>
+              {% endfor %}
+              <td class="px-6 py-4 text-center">
+                <div class="flex items-center justify-center space-x-1">
+                  <!-- <button onclick="openEditModal('{{ row.id }}', {{ row | tojson }})"
+                          class="flex items-center justify-center w-7 h-7 rounded-lg transition-colors hover:bg-primary/20"
+                          style="color:#00A86B;" title="Edit">
+                    <span class="material-symbols-outlined" style="font-size:15px;">edit</span>
+                  </button> -->
+                  <button 
+                    onclick='openEditModal({{ i }}, {{ row | tojson | safe }})'
+                    class="flex items-center justify-center w-7 h-7 rounded-lg transition-colors hover:bg-primary/20 text-xs font-bold"
+                    style="color:#00A86B;" title="Edit">
+                    <span class="material-symbols-outlined" style="font-size:15px;">edit</span>
+                  </button>
+                  <button onclick="deleteRow({{ i }})"
+                          class="flex items-center justify-center w-7 h-7 rounded-lg transition-colors hover:bg-error/20"
+                          style="color:#FF4D4D;" title="Hapus">
+                    <span class="material-symbols-outlined" style="font-size:15px;">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="px-8 py-4 flex items-center justify-between" style="border-top:1px solid rgba(44,44,44,0.2);">
+        <p class="text-[10px] text-on-surface-variant">Menampilkan <span id="visible-count">0</span> dari <span id="total-count">{{ rows|length }}</span> baris</p>
+        <!-- Pagination Controls -->
+        <div class="flex items-center space-x-2" id="pagination-controls">
+          <button id="btn-prev" onclick="changePage(-1)"
+                  class="flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-30"
+                  style="background:rgba(44,44,44,0.4);color:#e5e2e1;" disabled>
+            <span class="material-symbols-outlined" style="font-size:14px;">chevron_left</span>
+            <span>Prev</span>
+          </button>
+          <div id="page-numbers" class="flex items-center space-x-1"></div>
+          <button id="btn-next" onclick="changePage(1)"
+                  class="flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                  style="background:rgba(0,168,107,0.12);color:#00A86B;">
+            <span>Next</span>
+            <span class="material-symbols-outlined" style="font-size:14px;">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="bg-surface rounded-2xl p-16 flex flex-col items-center justify-center text-center" style="border:1px solid rgba(44,44,44,0.25);">
+      <span class="material-symbols-outlined text-on-surface-variant mb-4" style="font-size:56px;font-variation-settings:'FILL' 0;">table_view</span>
+      <h4 class="text-lg font-bold mb-2">Belum ada data</h4>
+      <p class="text-xs text-on-surface-variant max-w-xs mb-5">Upload file Excel (.xlsx) di atas atau tambahkan transaksi secara manual.</p>
+      <button onclick="openAddManualModal()"
+              class="flex items-center space-x-2 px-5 py-2.5 rounded-lg font-bold text-sm transition-colors"
+              style="background:rgba(0,168,107,0.15);color:#00A86B;border:1px solid rgba(0,168,107,0.3);">
+        <span class="material-symbols-outlined" style="font-size:16px;">add</span>
+        <span>Tambah Transaksi Manual</span>
+      </button>
+    </div>
+    {% endif %}
+
+  </div>
+</main>
+
+<script>
+/* ── PAGINATION ─────────────────────────────────────────────── */
+const ROWS_PER_PAGE = 20;
+let currentPage = 1;
+let filteredRows = [];
+
+function getAllRows() {
+  return Array.from(document.querySelectorAll('#data-tbody tr'));
+}
+
+function initPagination() {
+  filteredRows = getAllRows();
+  currentPage = 1;
+  renderPage();
+}
+
+function renderPage() {
+  const total = filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+  if (currentPage > totalPages) currentPage = totalPages;
+
+  const start = (currentPage - 1) * ROWS_PER_PAGE;
+  const end   = start + ROWS_PER_PAGE;
+
+  getAllRows().forEach(r => r.style.display = 'none');
+  filteredRows.forEach((r, i) => {
+    r.style.display = (i >= start && i < end) ? '' : 'none';
+  });
+
+  const showing = Math.min(end, total) - start;
+  const vc = document.getElementById('visible-count');
+  if (vc) vc.textContent = total > 0 ? `${start+1}–${Math.min(end,total)}` : '0';
+
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  if (btnPrev) btnPrev.disabled = currentPage <= 1;
+  if (btnNext) btnNext.disabled = currentPage >= totalPages;
+
+  const pnContainer = document.getElementById('page-numbers');
+  if (pnContainer) {
+    pnContainer.innerHTML = '';
+    let pStart = Math.max(1, currentPage - 2);
+    let pEnd   = Math.min(totalPages, pStart + 4);
+    if (pEnd - pStart < 4) pStart = Math.max(1, pEnd - 4);
+    for (let p = pStart; p <= pEnd; p++) {
+      const btn = document.createElement('button');
+      btn.textContent = p;
+      const pg = p;
+      btn.onclick = () => { currentPage = pg; renderPage(); };
+      btn.className = 'w-7 h-7 rounded-md text-xs font-bold transition-colors';
+      btn.style.cssText = p === currentPage
+        ? 'background:#00A86B;color:#000;'
+        : 'background:rgba(44,44,44,0.4);color:#e5e2e1;';
+      pnContainer.appendChild(btn);
+    }
+  }
+}
+
+function changePage(dir) {
+  const total = filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+  currentPage = Math.max(1, Math.min(totalPages, currentPage + dir));
+  renderPage();
+}
+
+/* ── FILE UPLOAD ─────────────────────────────────────────────── */
+function handleFileSelect(input){
+  if(input.files.length>0) showFilePreview(input.files[0]);
+}
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(!file) return;
+  if(!file.name.match(/\.(xlsx|xls)$/i)){ alert('Format file harus .xlsx atau .xls'); return; }
+  const dt = new DataTransfer(); dt.items.add(file);
+  document.getElementById('file-input').files = dt.files;
+  showFilePreview(file);
+}
+function showFilePreview(file){
+  document.getElementById('file-name').textContent = file.name;
+  document.getElementById('file-size').textContent = (file.size/1024).toFixed(1)+' KB';
+  document.getElementById('file-preview').classList.remove('hidden');
+}
+
+/* ── FILTER ──────────────────────────────────────────────────── */
+function filterTable(q){
+  const lower = q.toLowerCase();
+  const all   = getAllRows();
+  filteredRows = q ? all.filter(r => r.textContent.toLowerCase().includes(lower)) : all;
+  currentPage = 1;
+  renderPage();
+}
+
+/* ── SORT ────────────────────────────────────────────────────── */
+let sortDir = {};
+function sortTable(col){
+  const tbody  = document.getElementById('data-tbody');
+  const rows   = Array.from(tbody.querySelectorAll('tr'));
+  const header = Array.from(document.querySelectorAll('#data-table thead th')).map(th=>th.textContent.trim());
+  const colIdx = header.indexOf(col);
+  if(colIdx<0) return;
+  sortDir[col] = sortDir[col]==='asc'?'desc':'asc';
+  const dir = sortDir[col]==='asc'?1:-1;
+  rows.sort((a,b)=>{
+    const av=a.cells[colIdx]?.textContent.trim()||'';
+    const bv=b.cells[colIdx]?.textContent.trim()||'';
+    const an=parseFloat(av.replace(/[^\d.-]/g,''));
+    const bn=parseFloat(bv.replace(/[^\d.-]/g,''));
+    if(!isNaN(an)&&!isNaN(bn)) return (an-bn)*dir;
+    return av.localeCompare(bv)*dir;
+  });
+  rows.forEach(r=>tbody.appendChild(r));
+  filteredRows = rows;
+  currentPage = 1;
+  renderPage();
+}
+
+/* ── INIT ────────────────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+  const anchor = "{{ anchor }}";
+  if(anchor){ const el=document.getElementById(anchor); if(el) setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),300); }
+  if(document.getElementById('data-tbody')) initPagination();
+});
+</script>
+<!-- Edit Transaction Modal -->
+<div id="modal-edit-tx" class="fixed inset-0 z-50 hidden">
+  
+  <!-- overlay -->
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+
+  <!-- modal content -->
+  <div class="relative flex items-center justify-center h-full">
+    <div class="bg-surface rounded-2xl p-8 w-full max-w-lg mx-4 relative z-10"
+         style="border:1px solid rgba(44,44,44,0.4);">
+
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-bold font-headline">Edit Transaksi</h3>
+        <button onclick="closeEditModal()" class="text-on-surface-variant hover:text-on-surface transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div id="edit-fields" class="space-y-3 max-h-96 overflow-y-auto pr-1"></div>
+
+      <div class="flex space-x-3 mt-6">
+        <button onclick="closeEditModal()" class="flex-1 py-2.5 rounded-lg text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors">
+          Batal
+        </button>
+
+        <button onclick="saveEdit()" class="flex-1 py-2.5 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition-opacity text-sm">
+          Simpan
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-6 right-6 z-[100] hidden transition-all">
+  <div class="flex items-center space-x-3 px-5 py-3 rounded-xl text-sm font-semibold shadow-lg" id="toast-inner">
+    <span class="material-symbols-outlined" id="toast-icon" style="font-size:18px;"></span>
+    <span id="toast-msg"></span>
+  </div>
+</div>
+
+<!-- ── ADD MANUAL MODAL ──────────────────────────────────────────── -->
+<div id="modal-add-manual" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+  <div class="relative flex items-center justify-center h-full px-4">
+    <div class="bg-surface rounded-2xl p-8 w-full max-w-lg shadow-xl relative z-10" style="border:1px solid rgba(44,44,44,0.4);max-height:90vh;overflow-y:auto;">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h3 class="text-lg font-bold font-headline">Tambah Transaksi Manual</h3>
+          <p class="text-[10px] text-on-surface-variant mt-0.5">Data akan langsung tersimpan ke tabel</p>
+        </div>
+        <button onclick="closeAddManualModal()" class="text-on-surface-variant hover:text-on-surface transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="space-y-3">
+        <!-- Period -->
+        <div>
+          <label class="block text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1.5">Period (Tanggal)</label>
+          <input id="am-period" type="datetime-local"
+                 class="w-full bg-surface-variant rounded-lg px-4 py-2.5 text-on-surface text-xs border-none focus:outline-none focus:ring-1 focus:ring-primary"/>
+        </div>
+        <!-- IDR -->
+        <div>
+          <label class="block text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1.5">IDR (Nominal)</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xs font-semibold">Rp</span>
+            <input id="am-idr" type="number" min="0" placeholder="0" oninput="onIdrInput(this.value)"
+                   class="w-full bg-surface-variant rounded-lg pl-9 pr-4 py-2.5 text-on-surface text-xs border-none focus:outline-none focus:ring-1 focus:ring-primary"/>
+          </div>
+        </div>
+        <!-- Category -->
+        <div>
+          <label class="block text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1.5">Category</label>
+          <input id="am-category" type="text" placeholder="Contoh: Food, Savings, Transport..."
+                 list="am-category-list"
+                 class="w-full bg-surface-variant rounded-lg px-4 py-2.5 text-on-surface text-xs border-none focus:outline-none focus:ring-1 focus:ring-primary"/>
+          <datalist id="am-category-list">
+            <option value="Savings"/><option value="Food"/><option value="Transport"/>
+            <option value="Entertainment"/><option value="Health"/><option value="Education"/>
+            <option value="Shopping"/><option value="Utilities"/><option value="Lainnya"/>
+          </datalist>
+        </div>
+        <!-- Subcategory (optional) -->
+        <div>
+          <label class="block text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1.5">
+            Subcategory <span class="text-on-surface-variant/50 font-normal normal-case tracking-normal text-[10px]">(opsional)</span>
+          </label>
+          <input id="am-subcategory" type="text" placeholder="Contoh: Makan Siang, Bensin, dll..."
+                 class="w-full bg-surface-variant rounded-lg px-4 py-2.5 text-on-surface text-xs border-none focus:outline-none focus:ring-1 focus:ring-primary"/>
+        </div>
+        <!-- Note (optional) -->
+        <div>
+          <label class="block text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1.5">
+            Note <span class="text-on-surface-variant/50 font-normal normal-case tracking-normal text-[10px]">(opsional)</span>
+          </label>
+          <input id="am-note" type="text" placeholder="Catatan singkat..."
+                 class="w-full bg-surface-variant rounded-lg px-4 py-2.5 text-on-surface text-xs border-none focus:outline-none focus:ring-1 focus:ring-primary"/>
+        </div>
+        <!-- Accounts (auto dari IDR) -->
+        <div>
+          <label class="block text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1.5">
+            Accounts
+            <span class="ml-1 px-1.5 py-0.5 rounded text-[8px] font-bold" style="background:rgba(0,168,107,0.15);color:#00A86B;">AUTO</span>
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xs font-semibold">Rp</span>
+            <input id="am-accounts" type="number" min="0" placeholder="Otomatis dari IDR..."
+                   class="w-full bg-surface-variant rounded-lg pl-9 pr-4 py-2.5 text-on-surface text-xs border-none focus:outline-none focus:ring-1 focus:ring-primary"/>
+          </div>
+        </div>
+        <!-- Income/Expense -->
+        <div>
+          <label class="block text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1.5">Income / Expense</label>
+          <select id="am-type"
+                  class="w-full bg-surface-variant rounded-lg px-4 py-2.5 text-on-surface text-xs border-none focus:outline-none focus:ring-1 focus:ring-primary">
+            <option value="Income">Income</option>
+            <option value="Exp." selected>Exp. (Pengeluaran)</option>
+            <option value="Transfer-In">Transfer-In</option>
+            <option value="Transfer-Out">Transfer-Out</option>
+          </select>
+        </div>
+        <!-- Description (optional) -->
+        <div>
+          <label class="block text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1.5">
+            Description <span class="text-on-surface-variant/50 font-normal normal-case tracking-normal text-[10px]">(opsional)</span>
+          </label>
+          <textarea id="am-description" rows="2" placeholder="Deskripsi detail transaksi..."
+                 class="w-full bg-surface-variant rounded-lg px-4 py-2.5 text-on-surface text-xs border-none focus:outline-none focus:ring-1 focus:ring-primary resize-none"></textarea>
+        </div>
+        <!-- Amount (auto dari IDR) -->
+        <div>
+          <label class="block text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1.5">
+            Amount
+            <span class="ml-1 px-1.5 py-0.5 rounded text-[8px] font-bold" style="background:rgba(0,168,107,0.15);color:#00A86B;">AUTO</span>
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xs font-semibold">Rp</span>
+            <input id="am-amount" type="number" min="0" placeholder="Otomatis dari IDR..."
+                   class="w-full bg-surface-variant rounded-lg pl-9 pr-4 py-2.5 text-on-surface text-xs border-none focus:outline-none focus:ring-1 focus:ring-primary"/>
+          </div>
+        </div>
+        <!-- Currency -->
+        <div>
+          <label class="block text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1.5">Currency</label>
+          <select id="am-currency"
+                  class="w-full bg-surface-variant rounded-lg px-4 py-2.5 text-on-surface text-xs border-none focus:outline-none focus:ring-1 focus:ring-primary">
+            <option value="IDR" selected>IDR</option>
+            <option value="USD">USD</option>
+            <option value="SGD">SGD</option>
+            <option value="EUR">EUR</option>
+            <option value="JPY">JPY</option>
+          </select>
+        </div>
+        <!-- Savings allocation notice -->
+        <div id="am-savings-notice" class="hidden p-3 rounded-xl" style="background:rgba(0,168,107,0.08);border:1px solid rgba(0,168,107,0.2);">
+          <div class="flex items-center space-x-2">
+            <span class="material-symbols-outlined text-primary" style="font-size:15px;">auto_awesome</span>
+            <p class="text-[10px] text-primary font-semibold">Transaksi Savings akan otomatis dialokasikan ke goals yang memiliki % alokasi.</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex space-x-3 mt-6">
+        <button onclick="closeAddManualModal()" class="flex-1 py-2.5 rounded-lg text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors">Batal</button>
+        <button onclick="submitAddManual()" class="flex-1 py-2.5 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition-opacity text-sm">
+          <span class="material-symbols-outlined align-middle" style="font-size:16px;">save</span>
+          Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── ADD MANUAL ───────────────────────────────────────────────────
+function onIdrInput(val){
+  const num = parseFloat(val) || 0;
+  document.getElementById('am-amount').value   = num > 0 ? num : '';
+  document.getElementById('am-accounts').value = num > 0 ? num : '';
+}
+function openAddManualModal(){
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const local = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('am-period').value      = local;
+  document.getElementById('am-accounts').value    = '';
+  document.getElementById('am-category').value    = '';
+  document.getElementById('am-subcategory').value = '';
+  document.getElementById('am-note').value        = '';
+  document.getElementById('am-idr').value         = '';
+  document.getElementById('am-type').value        = 'Exp.';
+  document.getElementById('am-description').value = '';
+  document.getElementById('am-amount').value      = '';
+  document.getElementById('am-currency').value    = 'IDR';
+  document.getElementById('am-savings-notice').classList.add('hidden');
+  document.getElementById('modal-add-manual').classList.remove('hidden');
+}
+function closeAddManualModal(){
+  document.getElementById('modal-add-manual').classList.add('hidden');
+}
+document.getElementById('am-category').addEventListener('input', function(){
+  const v = this.value.trim().toLowerCase();
+  const notice = document.getElementById('am-savings-notice');
+  if(v === 'savings'){ notice.classList.remove('hidden'); }
+  else { notice.classList.add('hidden'); }
+});
+async function submitAddManual(){
+  const period      = document.getElementById('am-period').value;
+  const accounts    = parseFloat(document.getElementById('am-accounts').value)||0;
+  const category    = document.getElementById('am-category').value.trim();
+  const subcategory = document.getElementById('am-subcategory').value.trim();
+  const note        = document.getElementById('am-note').value.trim();
+  const idr         = parseFloat(document.getElementById('am-idr').value)||0;
+  const type        = document.getElementById('am-type').value;
+  const description = document.getElementById('am-description').value.trim();
+  const amount      = parseFloat(document.getElementById('am-amount').value)||idr;
+  const currency    = document.getElementById('am-currency').value;
+  if(!period){ showToast('Period (tanggal) wajib diisi','error'); return; }
+  if(!category){ showToast('Category wajib diisi','error'); return; }
+  if(idr <= 0){ showToast('IDR harus lebih dari 0','error'); return; }
+  const periodFmt = period.replace('T',' ') + ':00';
+  const body = {
+    Period:           periodFmt,
+    Accounts:         accounts || idr,
+    Category:         category,
+    Subcategory:      subcategory || '',
+    Note:             note || '',
+    IDR:              idr,
+    "Income/Expense": type,
+    Description:      description || '',
+    Amount:           amount || idr,
+    Currency:         currency,
+  };
+  try{
+    const res  = await fetch('/transactions/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data = await res.json();
+    if(data.success){
+      showToast('Transaksi berhasil ditambahkan','success');
+      closeAddManualModal();
+      setTimeout(()=>{ location.reload(); },600);
+    } else {
+      showToast(data.message||'Gagal menyimpan','error');
+    }
+  } catch(e){
+    showToast('Terjadi kesalahan jaringan','error');
+  }
+}
+// Close modal on overlay click
+document.getElementById('modal-add-manual').addEventListener('click', function(e){
+  if(e.target===this) closeAddManualModal();
+});
+</script>
+
+<script>
+let _editId   = null;
+let _editKeys = [];
+let _editIndex = null;
+
+/**
+ * OPEN MODAL
+ */
+function openEditModal(index, rowData) {
+  _editIndex = index;
+  _editId    = rowData['id'] ?? null;
+  _editKeys  = Object.keys(rowData).filter(k => k !== 'id');
+
+  const container = document.getElementById('edit-fields');
+  container.innerHTML = '';
+
+  _editKeys.forEach(key => {
+    const val = rowData[key] ?? '';
+
+    container.innerHTML += `
+      <div>
+        <label class="block text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-1">
+          ${key}
+        </label>
+        <input 
+          id="edit-field-${key}" 
+          value="${String(val).replace(/"/g,'&quot;')}"
+          class="w-full bg-surface-variant rounded-lg px-4 py-2.5 text-xs text-on-surface focus:outline-none focus:ring-1 focus:ring-primary border-none"
+        />
+      </div>
+    `;
+  });
+
+  document.getElementById('modal-edit-tx').classList.remove('hidden');
+}
+
+
+/**
+ * CLOSE MODAL
+ */
+function closeEditModal() {
+  document.getElementById('modal-edit-tx').classList.add('hidden');
+  _editId    = null;
+  _editIndex = null;
+  _editKeys  = [];
+}
+
+
+/**
+ * CONVERT VALUE (biar angka nggak jadi string)
+ */
+function parseValue(val) {
+  if (val === null || val === undefined) return "";
+
+  const trimmed = val.trim();
+
+  // number
+  if (trimmed !== "" && !isNaN(trimmed)) {
+    return Number(trimmed);
+  }
+
+  // boolean (optional)
+  if (trimmed.toLowerCase() === "true") return true;
+  if (trimmed.toLowerCase() === "false") return false;
+
+  return trimmed;
+}
+
+
+/**
+ * SAVE EDIT
+ */
+async function saveEdit() {
+  if (_editIndex === null) return;
+
+  const body = {};
+
+  _editKeys.forEach(key => {
+    const el = document.getElementById(`edit-field-${key}`);
+    if (el) {
+      body[key] = parseValue(el.value);
+    }
+  });
+
+  try {
+    const res = await fetch(`/transactions/edit-by-index/${_editIndex}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      showToast('Transaksi berhasil diperbarui', 'success');
+      closeEditModal();
+      setTimeout(() => { location.reload(); }, 500);
+    } else {
+      showToast(data.message || 'Gagal menyimpan', 'error');
+    }
+
+  } catch (e) {
+    console.error(e);
+    showToast('Terjadi kesalahan saat update', 'error');
+  }
+}
+
+async function deleteRow(index) {
+  if (!confirm('Hapus transaksi ini?')) return;
+  try {
+    const res  = await fetch(`/transactions/delete/${index}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Transaksi berhasil dihapus', 'success');
+      setTimeout(() => location.reload(), 600);
+    } else {
+      showToast(data.message || 'Gagal menghapus', 'error');
+    }
+  } catch(e) {
+    showToast('Terjadi kesalahan', 'error');
+  }
+}
+
+let _toastTimer = null;
+function showToast(msg, type='success') {
+  const toast = document.getElementById('toast');
+  const inner = document.getElementById('toast-inner');
+  const icon  = document.getElementById('toast-icon');
+  const label = document.getElementById('toast-msg');
+  label.textContent = msg;
+  if (type === 'success') {
+    inner.style.cssText = 'background:rgba(0,168,107,0.15);border:1px solid rgba(0,168,107,0.3);color:#00A86B;';
+    icon.textContent = 'check_circle';
+  } else {
+    inner.style.cssText = 'background:rgba(255,77,77,0.15);border:1px solid rgba(255,77,77,0.3);color:#FF4D4D;';
+    icon.textContent = 'error';
+  }
+  toast.classList.remove('hidden');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => toast.classList.add('hidden'), 2500);
+}
+
+// Close modal when clicking overlay
+document.getElementById('modal-edit-tx').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
+</script>
+</body></html>

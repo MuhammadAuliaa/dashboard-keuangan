@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html class="dark" lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Deinony Apps – Dashboard</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode:"class",
+      theme:{ extend:{ colors:{
+        "primary":"#00A86B","primary-container":"#00391d","on-primary":"#000000",
+        "background":"#0A0A0A","surface":"#121212","surface-variant":"#1E1E1E",
+        "surface-container-low":"#181818","surface-container-high":"#2C2C2C",
+        "on-surface":"#e5e2e1","on-surface-variant":"#A0A0A0",
+        "outline-variant":"#2C2C2C","error":"#FF4D4D","warning":"#F59E0B",
+      }, fontFamily:{ headline:["Manrope","sans-serif"], body:["Inter","sans-serif"] }}}
+    }
+  </script>
+  <style>
+    .material-symbols-outlined{ font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body{ font-family:'Manrope',sans-serif; }
+    .progress-glow{ box-shadow:0 0 12px rgba(0,168,107,0.35); }
+    #toast{ transition:opacity .4s ease,transform .4s ease; }
+    #toast.hidden-toast{ opacity:0; transform:translateY(20px); pointer-events:none; }
+    .nav-active{ color:#00A86B; background-color:rgba(0,168,107,0.10); font-weight:700; }
+    .filter-btn-active{ color:#00A86B!important; background:rgba(0,168,107,0.1)!important; }
+    .modal-overlay{ background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); }
+    .year-btn{ transition:all .2s; }
+    .year-btn.active{ background:#00A86B!important; color:#000!important; }
+    .chart-filter-btn{ transition:all .2s; border:1px solid rgba(44,44,44,0.4); }
+    .chart-filter-btn.active{ background:rgba(0,168,107,0.15); color:#00A86B; border-color:rgba(0,168,107,0.4); }
+  </style>
+</head>
+<body class="bg-background text-on-surface flex min-h-screen">
+
+<!-- SIDEBAR -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-background flex flex-col py-8 px-6 z-50" style="border-right:1px solid rgba(44,44,44,0.4);">
+  <div class="mb-10 px-4">
+    <h1 class="text-xl font-bold tracking-tight text-on-surface font-headline">Deinony Apps</h1>
+    <p class="text-[10px] font-bold tracking-widest text-on-surface/40 uppercase mt-1">By. Ade Aulia</p>
+  </div>
+  <nav class="flex-1 space-y-2">
+    <a href="/" class="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all nav-active">
+      <span class="material-symbols-outlined text-sm">dashboard</span><span class="text-sm">Dashboard</span>
+    </a>
+    <a href="/transactions" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface/60 font-medium hover:bg-surface-variant hover:text-on-surface transition-all">
+      <span class="material-symbols-outlined text-sm">receipt_long</span><span class="text-sm">Transaksi</span>
+    </a>
+    <a href="/savings-goals" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface/60 font-medium hover:bg-surface-variant hover:text-on-surface transition-all">
+      <span class="material-symbols-outlined text-sm">savings</span><span class="text-sm">Target Tabungan</span>
+    </a>
+  </nav>
+  <div class="mt-auto space-y-6">
+    <!-- <button onclick="openAddFundsModal()" class="w-full py-3 px-4 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center space-x-2">
+      <span class="material-symbols-outlined" style="font-size:18px;">add</span><span>Tambah Dana</span>
+    </button> -->
+    <div class="pt-6 space-y-2" style="border-top:1px solid rgba(44,44,44,0.4);">
+      <a href="#" class="flex items-center space-x-3 px-4 py-2 text-on-surface/60 font-medium hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-sm">settings</span><span class="text-sm">Pengaturan</span>
+      </a>
+      <a href="#" class="flex items-center space-x-3 px-4 py-2 text-on-surface/60 font-medium hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-sm">logout</span><span class="text-sm">Keluar</span>
+      </a>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="flex-1 ml-64 min-h-screen">
+
+  <!-- Header -->
+  <header class="w-full px-10 py-8 flex items-center justify-between sticky top-0 z-40 bg-background/80 backdrop-blur-md" style="border-bottom:1px solid rgba(44,44,44,0.3);">
+    <div class="flex items-center space-x-4">
+      <h2 class="text-3xl font-bold font-headline">Dashboard Tabungan</h2>
+      <!-- Year Filter -->
+      <div class="flex items-center space-x-1 p-1 rounded-lg" style="background:rgba(30,30,30,0.8);border:1px solid rgba(44,44,44,0.4);">
+        {% for y in data.available_years %}
+        <button onclick="setYear({{ y }})" id="year-btn-{{ y }}"
+                class="year-btn px-3 py-1.5 rounded-md text-xs font-bold text-on-surface-variant {{ 'active' if loop.first else '' }}">
+          {{ y }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="flex items-center space-x-6">
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant" style="font-size:16px;">search</span>
+        <input class="bg-surface rounded-lg pl-10 pr-4 py-2 text-sm w-64 text-on-surface focus:outline-none focus:ring-1 focus:ring-primary border-none" placeholder="Cari data..." type="text"/>
+      </div>
+      <div class="flex items-center space-x-4">
+        <span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-on-surface transition-colors">notifications</span>
+        <div class="w-8 h-8 rounded-full overflow-hidden" style="border:1px solid rgba(44,44,44,0.6);">
+          <img class="w-full h-full object-cover" src="{{ data.user.avatar }}" alt="{{ data.user.name }}"/>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="px-10 pb-10 pt-8 grid grid-cols-12 gap-8">
+
+    <!-- LEFT COL -->
+    <div class="col-span-12 lg:col-span-8 space-y-8">
+
+      <!-- 1. Main Balance Card -->
+      <div class="bg-surface p-8 rounded-2xl relative overflow-hidden flex justify-between items-center">
+        <div class="relative z-10 w-full pr-12">
+          <p class="text-xs text-on-surface-variant font-medium mb-2">Total Tabungan</p>
+          <div class="flex items-end justify-between mb-1">
+            <h3 class="text-4xl font-bold tracking-tight font-headline" id="total-tabungan">{{ data.summary.total_tabungan_fmt }},00</h3>
+            <span class="text-primary text-xs font-bold" id="persen-label">{{ data.summary.persen_completed }}% dari <span id="max-fmt-label">{{ data.summary.max_fmt }}</span></span>
+          </div>
+          <div class="flex items-center space-x-2 mb-4">
+            <p class="text-[10px] text-on-surface-variant">Maksimal target: <span id="max-fmt-label-2">{{ data.summary.max_fmt }}</span></p>
+            <button onclick="openEditMaxModal()" class="flex items-center space-x-1 px-2 py-0.5 rounded text-[9px] font-bold transition-colors"
+                    style="background:rgba(0,168,107,0.1);color:#00A86B;border:1px solid rgba(0,168,107,0.2);"
+                    title="Edit Maksimal Target Tabungan">
+              <span class="material-symbols-outlined" style="font-size:11px;">edit</span>
+              <span>Edit Max</span>
+            </button>
+          </div>
+          <div class="w-full bg-surface-container-high h-10 rounded-full overflow-hidden">
+            <div id="progress-bar" class="bg-primary h-full rounded-full progress-glow transition-all duration-700"
+                 style="width:{{ data.summary.persen_completed }}%;"></div>
+          </div>
+        </div>
+        <div class="hidden xl:block">
+          <div class="w-32 h-32 rounded-full flex items-center justify-center"
+               style="background:radial-gradient(circle,rgba(0,168,107,0.15) 0%,rgba(0,168,107,0.02) 70%);">
+            <span class="material-symbols-outlined text-primary" style="font-size:56px;font-variation-settings:'FILL' 1;">savings</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Stat Cards (year-aware) -->
+      <div class="grid grid-cols-3 gap-6">
+        <div class="bg-surface p-6 rounded-2xl" style="border:1px solid rgba(44,44,44,0.25);">
+          <div class="flex justify-between items-center mb-6">
+            <p class="text-sm text-on-surface-variant">Pemasukan</p>
+            <span class="material-symbols-outlined text-primary text-sm">account_balance_wallet</span>
+          </div>
+          <h4 class="text-2xl font-bold mb-1" id="stat-income">{{ data.summary.income | rupiah }}</h4>
+          <p class="text-[10px] text-on-surface-variant" id="stat-income-year">Total pemasukan <span id="income-year-label">tahun ini</span></p>
+        </div>
+        <div class="bg-surface p-6 rounded-2xl" style="border:1px solid rgba(44,44,44,0.25);">
+          <div class="flex justify-between items-center mb-6">
+            <p class="text-sm text-on-surface-variant">Pengeluaran</p>
+            <span class="material-symbols-outlined text-primary text-sm">schedule</span>
+          </div>
+          <h4 class="text-2xl font-bold mb-1" id="stat-outcome">{{ data.summary.outcome | rupiah }}</h4>
+          <p class="text-[10px] text-on-surface-variant">Total pengeluaran <span id="outcome-year-label">tahun ini</span></p>
+        </div>
+        <div class="bg-surface p-6 rounded-2xl" style="border:1px solid rgba(44,44,44,0.25);">
+          <div class="flex justify-between items-center mb-6">
+            <p class="text-sm text-on-surface-variant">Total Target Tabungan</p>
+            <span class="material-symbols-outlined text-primary text-sm">check_circle</span>
+          </div>
+          <h4 class="text-2xl font-bold mb-1">{{ data.summary.total_goals }} Goals</h4>
+          <p class="text-[10px] text-on-surface-variant">Total target tabungan yang ingin dicapai</p>
+        </div>
+      </div>
+
+      <!-- 3. Analytics Chart with filter -->
+      <div class="bg-surface p-8 rounded-2xl" style="border:1px solid rgba(44,44,44,0.25);">
+        <div class="flex items-center justify-between mb-6">
+          <h4 class="text-lg font-bold font-headline">Analisis Pemasukan & Pengeluaran</h4>
+          <!-- Chart mode filter -->
+          <div class="flex items-center space-x-2">
+            <button onclick="setChartMode('both')" id="chart-btn-both"
+                    class="chart-filter-btn active px-3 py-1.5 rounded-lg text-xs font-bold">Semua</button>
+            <button onclick="setChartMode('income')" id="chart-btn-income"
+                    class="chart-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-on-surface-variant">Pemasukan</button>
+            <button onclick="setChartMode('outcome')" id="chart-btn-outcome"
+                    class="chart-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-on-surface-variant">Pengeluaran</button>
+          </div>
+        </div>
+        <div class="h-56 relative"><canvas id="analyticsChart"></canvas></div>
+      </div>
+
+      <!-- 4. Recent Activity / Histori Transaksi -->
+      <div class="bg-surface rounded-2xl overflow-hidden" style="border:1px solid rgba(44,44,44,0.25);">
+        <div class="px-8 py-6 flex items-center justify-between" style="border-bottom:1px solid rgba(44,44,44,0.25);">
+          <div class="flex items-center space-x-2">
+            <h4 class="text-lg font-bold font-headline">Histori Transaksi</h4>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:rgba(0,168,107,0.12);color:#00A86B;">Tabungan</span>
+          </div>
+          <a href="/transactions?anchor=data-table-section"
+             class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors"
+             style="background:rgba(0,168,107,0.1);color:#00A86B;">
+            <span class="material-symbols-outlined" style="font-size:14px;">open_in_new</span>
+            <span>Lihat Semua</span>
+          </a>
+        </div>
+        {% if data.tabungan_transactions %}
+        <script id="tabungan-data" type="application/json">
+          {{ data.tabungan_transactions | tojson }}
+        </script>
+        {% else %}
+        <script id="tabungan-data" type="application/json">[]</script>
+        {% endif %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="bg-background text-[10px] uppercase tracking-widest text-on-surface-variant">
+              <tr>
+                <th class="px-6 py-3 font-semibold">Period</th>
+                <th class="px-6 py-3 font-semibold">Category</th>
+                <th class="px-6 py-3 font-semibold">IDR</th>
+                <th class="px-6 py-3 font-semibold">Note</th>
+              </tr>
+            </thead>
+            <tbody id="tabungan-tbody" class="divide-y divide-outline-variant/10">
+              <!-- filled by JS -->
+            </tbody>
+          </table>
+        </div>
+        <!-- Empty state (shown by JS when no rows) -->
+        <div id="tabungan-empty" class="hidden px-8 py-10 flex flex-col items-center justify-center text-center">
+          <span class="material-symbols-outlined text-on-surface-variant mb-3" style="font-size:40px;font-variation-settings:'FILL' 0;">savings</span>
+          <p class="text-sm font-bold mb-1">Belum ada data tabungan</p>
+          <p class="text-xs text-on-surface-variant">Pastikan ada transaksi dengan <strong>Category</strong> = <strong>Savings</strong> atau <strong>Tabungan</strong>.</p>
+          <a href="/transactions" class="mt-4 flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-bold" style="background:rgba(0,168,107,0.1);color:#00A86B;">
+            <span class="material-symbols-outlined" style="font-size:14px;">receipt_long</span>
+            <span>Input Transaksi</span>
+          </a>
+        </div>
+        <!-- Pagination Controls -->
+        <div id="tabungan-pagination" class="px-6 py-4 flex items-center justify-between" style="border-top:1px solid rgba(44,44,44,0.2);">
+          <span id="tabungan-page-info" class="text-[11px] text-on-surface-variant font-medium"></span>
+          <div class="flex items-center space-x-1">
+            <button id="tabungan-prev"
+                    onclick="tabunganPage(-1)"
+                    class="flex items-center justify-center w-7 h-7 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled>
+              <span class="material-symbols-outlined" style="font-size:16px;">chevron_left</span>
+            </button>
+            <div id="tabungan-page-dots" class="flex items-center space-x-1"></div>
+            <button id="tabungan-next"
+                    onclick="tabunganPage(1)"
+                    class="flex items-center justify-center w-7 h-7 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+              <span class="material-symbols-outlined" style="font-size:16px;">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COL -->
+    <div class="col-span-12 lg:col-span-4 space-y-8">
+
+      <!-- 5. Monthly Goal -->
+      <div class="bg-surface p-8 rounded-2xl" style="border:1px solid rgba(44,44,44,0.25);">
+        <div class="flex justify-between items-center mb-1">
+          <h4 class="text-lg font-bold font-headline">Target Tabungan Bulanan</h4>
+          <div class="flex items-center space-x-2">
+            <button onclick="openEditGoalModal()" class="p-1 rounded-lg hover:bg-surface-variant transition-colors" title="Edit Target Bulanan">
+              <span class="material-symbols-outlined text-on-surface-variant hover:text-primary" style="font-size:18px;">edit</span>
+            </button>
+            <span class="material-symbols-outlined text-primary">flag</span>
+          </div>
+        </div>
+        <p class="text-xs text-on-surface-variant mb-8">Target: <span id="mg-target-label">{{ data.monthly_goal.target_fmt }}</span> per bulan</p>
+        <div class="rounded-2xl p-6 text-center" style="background:rgba(30,30,30,0.5);border:1px solid rgba(44,44,44,0.35);backdrop-filter:blur(20px);">
+          <div class="mb-6">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Tabungan Bulan Ini
+              <span class="ml-1 px-1.5 py-0.5 rounded text-[8px] font-bold" style="background:rgba(0,168,107,0.15);color:#00A86B;vertical-align:middle;">AUTO</span>
+            </p>
+            <h3 class="text-2xl font-bold" id="mg-saved-label">{{ data.monthly_goal.saved_fmt }}</h3>
+            <p class="text-[9px] text-on-surface-variant mt-0.5">Dari transaksi Category 'Savings' bulan ini</p>
+          </div>
+          <div class="relative w-full bg-surface-container-high h-4 rounded-full overflow-hidden">
+            <div id="mg-progress-bar" class="bg-primary h-full rounded-full progress-glow" style="width:{{ data.monthly_goal.persen }}%;"></div>
+          </div>
+          <div class="flex justify-between mt-3 px-1">
+            <span class="text-[10px] font-bold text-primary" id="mg-persen-label">{{ data.monthly_goal.persen }}% Achieved</span>
+            <span class="text-[10px] font-bold text-on-surface-variant" id="mg-sisa-label">{{ data.monthly_goal.sisa_fmt }} Left</span>
+          </div>
+        </div>
+        <div class="mt-6 grid grid-cols-1 gap-3">
+          <div class="p-4 rounded-xl" style="background:#1A1A1A;border:1px solid rgba(44,44,44,0.35);">
+            <p class="text-[10px] text-on-surface-variant mb-1">Rata-rata Harian</p>
+            <p class="text-sm font-bold" id="mg-avg-label">{{ data.monthly_goal.avg_daily_fmt }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Upcoming Deadlines -->
+      <div class="bg-surface rounded-2xl overflow-hidden" style="border:1px solid rgba(44,44,44,0.25);">
+        <div class="p-8">
+          <div class="flex justify-between items-center mb-8">
+            <h4 class="text-lg font-bold font-headline">Deadline Mendatang</h4>
+            <span class="material-symbols-outlined text-primary">event_note</span>
+          </div>
+          <div class="space-y-8">
+            {% for dl in data.upcoming_deadlines %}
+            <div class="space-y-3">
+              <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+                <div class="flex items-center space-x-2">
+                  <div class="w-5 h-5 bg-surface-container-high rounded flex items-center justify-center">
+                    <span class="material-symbols-outlined" style="font-size:10px;">{{ dl.icon }}</span>
+                  </div>
+                  <span>{{ dl.name }}</span>
+                </div>
+                <span class="text-on-surface-variant">tersisa {{ dl.days_left }} hari</span>
+                <span class="text-on-surface-variant">{{ dl.remaining_fmt }}</span>
+              </div>
+              <div class="w-full bg-surface-container-high h-1.5 rounded-full">
+                <div class="bg-primary h-full rounded-full progress-glow" style="width:{{ dl.persen }}%;"></div>
+              </div>
+              <div class="flex justify-between text-[10px] font-bold">
+                <span class="text-on-surface-variant">Saved</span>
+                <span class="text-on-surface">{{ dl.persen }}%</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <a href="/savings-goals"
+           class="w-full py-4 bg-primary text-black text-[10px] font-bold flex items-center justify-between px-8 hover:opacity-90 transition-opacity">
+          <span>View All Goals</span>
+          <span class="material-symbols-outlined text-sm">chevron_right</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- MODAL: ADD FUNDS -->
+<div id="modal-overlay" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay">
+  <div class="bg-surface rounded-2xl p-8 w-full max-w-md shadow-xl" style="border:1px solid rgba(44,44,44,0.4);">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-bold font-headline">Tambah Dana</h3>
+      <button onclick="closeAddFundsModal()" class="text-on-surface-variant hover:text-on-surface">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="mb-5">
+      <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Jumlah (Rp)</label>
+      <input id="input-amount" type="number" min="1000" step="1000" placeholder="Contoh: 500000"
+             class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+    </div>
+    <div class="mb-8">
+      <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Savings Goal</label>
+      <select id="input-goal" class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary">
+        <option>Laptop Gaming</option><option>Liburan Bali</option>
+        <option>Dana Darurat</option><option>General Savings</option>
+      </select>
+    </div>
+    <div class="flex space-x-3">
+      <button onclick="closeAddFundsModal()" class="flex-1 py-3 rounded-lg text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors">Batal</button>
+      <button onclick="submitAddFunds()" class="flex-1 py-3 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition-opacity text-sm">Tambah Dana</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT MONTHLY GOAL -->
+<div id="modal-edit-goal" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay">
+  <div class="bg-surface rounded-2xl p-8 w-full max-w-md shadow-xl" style="border:1px solid rgba(44,44,44,0.4);">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-bold font-headline">Edit Target Bulanan</h3>
+      <button onclick="closeEditGoalModal()" class="text-on-surface-variant hover:text-on-surface">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="mb-5">
+      <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Target Bulanan (Rp)</label>
+      <input id="mg-target-input" type="number" min="100000" step="100000" placeholder="Contoh: 10000000"
+             class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+    </div>
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-2">
+        <label class="block text-xs text-on-surface-variant uppercase tracking-widest font-bold">
+          Sudah Ditabung Bulan Ini (Rp)
+        </label>
+        <button onclick="document.getElementById('mg-saved-input').value='0'" type="button"
+                class="flex items-center space-x-1 px-2 py-1 rounded text-[10px] font-bold transition-colors"
+                style="background:rgba(255,77,77,0.1);color:#FF4D4D;border:1px solid rgba(255,77,77,0.2);"
+                title="Reset ke 0">
+          <span class="material-symbols-outlined" style="font-size:12px;">restart_alt</span>
+          <span>Reset</span>
+        </button>
+      </div>
+      <input id="mg-saved-input" type="number" min="0" step="100000" placeholder="Masukkan nilai manual atau biarkan otomatis"
+             class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+      <p class="text-[10px] text-on-surface-variant mt-1">Bisa diedit manual. Reset → set ke 0. Nilai ini override kalkulasi otomatis.</p>
+    </div>
+    <div class="flex space-x-3">
+      <button onclick="closeEditGoalModal()" class="flex-1 py-3 rounded-lg text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors">Batal</button>
+      <button onclick="submitEditGoal()" class="flex-1 py-3 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition-opacity text-sm">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIT MAX TABUNGAN -->
+<div id="modal-edit-max" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay">
+  <div class="bg-surface rounded-2xl p-8 w-full max-w-md shadow-xl" style="border:1px solid rgba(44,44,44,0.4);">
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h3 class="text-xl font-bold font-headline">Edit Maksimal Target Tabungan</h3>
+        <p class="text-[10px] text-on-surface-variant mt-1">Ini adalah batas total tabungan yang ingin dicapai</p>
+      </div>
+      <button onclick="closeEditMaxModal()" class="text-on-surface-variant hover:text-on-surface">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="mb-8">
+      <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Maksimal Target Total (Rp)</label>
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm font-semibold">Rp</span>
+        <input id="max-tabungan-input" type="number" min="1000000" step="1000000" placeholder="Contoh: 500000000"
+               class="w-full bg-surface-variant rounded-lg pl-9 pr-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+      </div>
+      <p class="text-[10px] text-on-surface-variant mt-1">Persentase progress total tabungan dihitung berdasarkan nilai ini.</p>
+    </div>
+    <div class="flex space-x-3">
+      <button onclick="closeEditMaxModal()" class="flex-1 py-3 rounded-lg text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors">Batal</button>
+      <button onclick="submitEditMax()" class="flex-1 py-3 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition-opacity text-sm">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="fixed bottom-8 right-8 z-50 bg-surface-variant px-5 py-3 rounded-xl flex items-center space-x-3 shadow-xl hidden-toast" style="border:1px solid rgba(0,168,107,0.3);">
+  <span class="material-symbols-outlined text-primary text-sm" id="toast-icon">check_circle</span>
+  <span id="toast-msg" class="text-sm font-semibold"></span>
+</div>
+
+<script>
+/* ─── STATE ──────────────────────────────────────────────────────── */
+let currentYear = {{ data.available_years[0] }};
+let currentMode = 'both';
+let analyticsChart = null;
+
+/* ─── YEAR FILTER ────────────────────────────────────────────────── */
+async function setYear(year){
+  currentYear = year;
+  document.querySelectorAll('.year-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('year-btn-'+year).classList.add('active');
+  // Update stats
+  try{
+    const res  = await fetch('/api/dashboard-summary?year='+year);
+    const data = await res.json();
+    document.getElementById('stat-income').textContent  = data.income_fmt;
+    document.getElementById('stat-outcome').textContent = data.outcome_fmt;
+    document.getElementById('income-year-label').textContent  = 'tahun '+year;
+    document.getElementById('outcome-year-label').textContent = 'tahun '+year;
+  } catch(e){}
+  // Update chart
+  await loadChart();
+  // Refresh tabungan transactions filtered by selected year
+  try{
+    const res  = await fetch('/api/tabungan-transactions');
+    const rows = await res.json();
+    tabunganAllRows = _filterByYear(rows);
+    tabunganCurrentPage = 1;
+    tabunganRender();
+  } catch(e){}
+}
+
+/* ─── CHART MODE FILTER ──────────────────────────────────────────── */
+function setChartMode(mode){
+  currentMode = mode;
+  document.querySelectorAll('.chart-filter-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('chart-btn-'+mode).classList.add('active');
+  loadChart();
+}
+
+async function loadChart(){
+  try{
+    const res  = await fetch(`/api/analytics?year=${currentYear}&mode=${currentMode}`);
+    const d    = await res.json();
+
+    if(analyticsChart){ analyticsChart.destroy(); analyticsChart = null; }
+
+    const ctx  = document.getElementById('analyticsChart').getContext('2d');
+    const datasets = [];
+
+    if(d.income){
+      const grad = ctx.createLinearGradient(0,0,0,220);
+      grad.addColorStop(0,'rgba(0,168,107,0.25)');
+      grad.addColorStop(1,'rgba(0,168,107,0.00)');
+      datasets.push({ label:'Pemasukan', data:d.income, fill:true, backgroundColor:grad,
+        borderColor:'#00A86B', borderWidth:2, pointBackgroundColor:'#00A86B',
+        pointBorderColor:'#0A0A0A', pointBorderWidth:2, pointRadius:4, tension:0.45 });
+    }
+    if(d.outcome){
+      const grad2 = ctx.createLinearGradient(0,0,0,220);
+      grad2.addColorStop(0,'rgba(255,77,77,0.18)');
+      grad2.addColorStop(1,'rgba(255,77,77,0.00)');
+      datasets.push({ label:'Pengeluaran', data:d.outcome, fill:true, backgroundColor:grad2,
+        borderColor:'#FF4D4D', borderWidth:2, pointBackgroundColor:'#FF4D4D',
+        pointBorderColor:'#0A0A0A', pointBorderWidth:2, pointRadius:4, tension:0.45 });
+    }
+
+    analyticsChart = new Chart(ctx,{
+      type:'line',
+      data:{ labels:d.labels, datasets },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display: datasets.length>1, labels:{ color:'#A0A0A0', font:{size:11} } },
+          tooltip:{ backgroundColor:'#1E1E1E', borderColor:'rgba(44,44,44,0.6)', borderWidth:1,
+            titleColor:'#A0A0A0', bodyColor:'#e5e2e1',
+            callbacks:{ label:c=>' Rp '+c.parsed.y.toLocaleString('id-ID') }}},
+        scales:{
+          x:{ grid:{color:'rgba(44,44,44,0.4)'}, ticks:{color:'#A0A0A0',font:{size:10}} },
+          y:{ grid:{color:'rgba(44,44,44,0.4)'},
+            ticks:{color:'#A0A0A0',font:{size:10},callback:v=>v?'Rp '+(v/1_000_000).toFixed(1)+'jt':''}}}}
+    });
+  } catch(e){ console.error(e); }
+}
+
+/* ─── EDIT MONTHLY GOAL ──────────────────────────────────────────── */
+async function openEditGoalModal(){
+  try{
+    const res = await fetch('/api/monthly-goal');
+    const mg  = await res.json();
+    document.getElementById('mg-target-input').value = mg.target;
+    document.getElementById('mg-saved-input').value  = mg.saved;
+  } catch(e){}
+  document.getElementById('modal-edit-goal').classList.remove('hidden');
+}
+function closeEditGoalModal(){ document.getElementById('modal-edit-goal').classList.add('hidden'); }
+
+async function submitEditGoal(){
+  const target = parseInt(document.getElementById('mg-target-input').value)||0;
+  const saved  = parseInt(document.getElementById('mg-saved-input').value)||0;
+  if(!target){ showToast('Target tidak boleh kosong','error'); return; }
+  try{
+    const res  = await fetch('/api/monthly-goal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target,saved})});
+    const data = await res.json();
+    if(data.success){
+      document.getElementById('mg-target-label').textContent = data.target_fmt;
+      document.getElementById('mg-saved-label').textContent  = data.saved_fmt;
+      document.getElementById('mg-persen-label').textContent = data.persen+'% Achieved';
+      document.getElementById('mg-sisa-label').textContent   = data.sisa_fmt+' Left';
+      document.getElementById('mg-avg-label').textContent    = data.avg_daily_fmt;
+      document.getElementById('mg-progress-bar').style.width = data.persen+'%';
+      showToast(data.message);
+      closeEditGoalModal();
+    } else showToast(data.message,'error');
+  } catch(e){ showToast('Kesalahan jaringan','error'); }
+}
+
+/* ─── ADD FUNDS ──────────────────────────────────────────────────── */
+function openAddFundsModal(){ document.getElementById('modal-overlay').classList.remove('hidden'); }
+function closeAddFundsModal(){
+  document.getElementById('modal-overlay').classList.add('hidden');
+  document.getElementById('input-amount').value='';
+}
+async function submitAddFunds(){
+  const amount = parseInt(document.getElementById('input-amount').value);
+  const goal   = document.getElementById('input-goal').value;
+  if(!amount||amount<1000){ showToast('Minimal Rp 1.000','error'); return; }
+  try{
+    const res  = await fetch('/api/add-funds',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount,goal})});
+    const data = await res.json();
+    if(data.success){
+      document.getElementById('total-tabungan').textContent = data.new_total_fmt+',00';
+      document.getElementById('persen-label').textContent   = data.new_persen+'% dari Rp 500.000.000';
+      document.getElementById('progress-bar').style.width   = data.new_persen+'%';
+      showToast(data.message);
+      closeAddFundsModal();
+    } else showToast(data.message,'error');
+  } catch(e){ showToast('Kesalahan jaringan','error'); }
+}
+
+/* ─── TOAST ──────────────────────────────────────────────────────── */
+function showToast(msg,type='success'){
+  const t  = document.getElementById('toast');
+  const ic = document.getElementById('toast-icon');
+  document.getElementById('toast-msg').textContent=msg;
+  ic.textContent = type==='success'?'check_circle':'error';
+  ic.style.color = type==='success'?'#00A86B':'#FF4D4D';
+  t.style.borderColor = type==='success'?'rgba(0,168,107,0.3)':'rgba(255,77,77,0.3)';
+  t.classList.remove('hidden-toast');
+  setTimeout(()=>t.classList.add('hidden-toast'),3500);
+}
+
+/* Close on overlay click */
+document.getElementById('modal-overlay').addEventListener('click',function(e){ if(e.target===this) closeAddFundsModal(); });
+document.getElementById('modal-edit-goal').addEventListener('click',function(e){ if(e.target===this) closeEditGoalModal(); });
+document.getElementById('modal-edit-max').addEventListener('click',function(e){ if(e.target===this) closeEditMaxModal(); });
+
+/* ─── EDIT MAX TABUNGAN ──────────────────────────────────────────── */
+function openEditMaxModal(){
+  // Read current max from label text (strip "Rp " and dots)
+  const currentTxt = document.getElementById('max-fmt-label-2').textContent;
+  const currentVal = parseInt(currentTxt.replace(/[^0-9]/g,'')) || 500000000;
+  document.getElementById('max-tabungan-input').value = currentVal;
+  document.getElementById('modal-edit-max').classList.remove('hidden');
+}
+function closeEditMaxModal(){ document.getElementById('modal-edit-max').classList.add('hidden'); }
+async function submitEditMax(){
+  const maxVal = parseInt(document.getElementById('max-tabungan-input').value)||0;
+  if(maxVal < 1000000){ showToast('Maksimal target minimal Rp 1.000.000','error'); return; }
+  try{
+    const res  = await fetch('/api/max-tabungan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({max_tabungan: maxVal})});
+    const data = await res.json();
+    if(data.success){
+      document.getElementById('max-fmt-label').textContent  = data.max_fmt;
+      document.getElementById('max-fmt-label-2').textContent = data.max_fmt;
+      document.getElementById('persen-label').textContent    = data.persen+'% dari '+data.max_fmt;
+      document.getElementById('progress-bar').style.width    = data.persen+'%';
+      showToast('Maksimal target berhasil diperbarui');
+      closeEditMaxModal();
+    } else showToast(data.message||'Gagal menyimpan','error');
+  } catch(e){ showToast('Kesalahan jaringan','error'); }
+}
+
+/* ─── HISTORI TRANSAKSI PAGINATION ──────────────────────────────── */
+const TABUNGAN_PER_PAGE = 5;
+let tabunganCurrentPage = 1;
+let tabunganAllRows = [];
+
+function tabunganRender(){
+  const tbody      = document.getElementById('tabungan-tbody');
+  const info       = document.getElementById('tabungan-page-info');
+  const dots       = document.getElementById('tabungan-page-dots');
+  const prev       = document.getElementById('tabungan-prev');
+  const next       = document.getElementById('tabungan-next');
+  const emptyEl    = document.getElementById('tabungan-empty');
+  const paginEl    = document.getElementById('tabungan-pagination');
+  if(!tbody) return;
+
+  const total  = tabunganAllRows.length;
+
+  // Toggle empty state vs table+pagination
+  if(total === 0){
+    tbody.closest('.overflow-x-auto').style.display = 'none';
+    if(emptyEl)  emptyEl.classList.remove('hidden');
+    if(paginEl)  paginEl.style.display = 'none';
+    return;
+  } else {
+    tbody.closest('.overflow-x-auto').style.display = '';
+    if(emptyEl)  emptyEl.classList.add('hidden');
+    if(paginEl)  paginEl.style.display = '';
+  }
+
+  const pages  = Math.max(1, Math.ceil(total / TABUNGAN_PER_PAGE));
+  tabunganCurrentPage = Math.min(tabunganCurrentPage, pages);
+
+  const start  = (tabunganCurrentPage - 1) * TABUNGAN_PER_PAGE;
+  const slice  = tabunganAllRows.slice(start, start + TABUNGAN_PER_PAGE);
+
+  tbody.innerHTML = slice.map(row => {
+    const period = row.Period || '—';
+    const cat    = row.Category || '—';
+    const idr    = row.IDR
+      ? 'Rp ' + parseFloat(String(row.IDR).replace(/,/g,'')).toLocaleString('id-ID')
+      : '—';
+    const note   = row.Note || '—';
+    return `<tr class="hover:bg-white/5 transition-colors">
+      <td class="px-6 py-4 text-xs whitespace-nowrap">${period}</td>
+      <td class="px-6 py-4 text-xs whitespace-nowrap">${cat}</td>
+      <td class="px-6 py-4 text-xs whitespace-nowrap font-medium text-primary">${idr}</td>
+      <td class="px-6 py-4 text-xs whitespace-nowrap text-on-surface-variant">${note}</td>
+    </tr>`;
+  }).join('');
+
+  // Info text
+  const endRow = Math.min(start + TABUNGAN_PER_PAGE, total);
+  info.textContent = `${start + 1}–${endRow} dari ${total} transaksi`;
+
+  // Prev / Next buttons
+  prev.disabled = tabunganCurrentPage <= 1;
+  next.disabled = tabunganCurrentPage >= pages;
+
+  // Page dots (max 5 shown)
+  dots.innerHTML = '';
+  const maxDots = 5;
+  let startDot  = Math.max(1, tabunganCurrentPage - Math.floor(maxDots/2));
+  let endDot    = Math.min(pages, startDot + maxDots - 1);
+  if(endDot - startDot < maxDots - 1) startDot = Math.max(1, endDot - maxDots + 1);
+
+  for(let p = startDot; p <= endDot; p++){
+    const active = p === tabunganCurrentPage;
+    const btn = document.createElement('button');
+    btn.textContent = p;
+    btn.className = 'w-7 h-7 rounded-lg text-xs font-bold transition-colors '
+      + (active
+        ? 'text-black'
+        : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-variant');
+    if(active) btn.style.cssText = 'background:#00A86B;';
+    btn.onclick = () => { tabunganCurrentPage = p; tabunganRender(); };
+    dots.appendChild(btn);
+  }
+}
+
+function tabunganPage(dir){
+  const pages = Math.max(1, Math.ceil(tabunganAllRows.length / TABUNGAN_PER_PAGE));
+  tabunganCurrentPage = Math.max(1, Math.min(pages, tabunganCurrentPage + dir));
+  tabunganRender();
+}
+
+function _filterByYear(rows){
+  const yr = parseInt(currentYear);
+  if(!yr || isNaN(yr)) return rows; // no valid year → show all
+  return rows.filter(r => {
+    if(!r.Period) return true;
+    try{ return new Date(r.Period.substring(0,10)).getFullYear() === yr; }
+    catch(e){ return true; }
+  });
+}
+
+function tabunganInit(){
+  const el = document.getElementById('tabungan-data');
+  if(!el) return;
+  let allRows = [];
+  try{ allRows = JSON.parse(el.textContent); }
+  catch(e){ allRows = []; }
+  tabunganAllRows = _filterByYear(allRows);
+  tabunganCurrentPage = 1;
+  tabunganRender();
+}
+
+async function tabunganRefresh(){
+  try{
+    const res  = await fetch('/api/tabungan-transactions');
+    const rows = await res.json();
+    tabunganAllRows     = _filterByYear(rows);
+    tabunganCurrentPage = 1;
+    tabunganRender();
+  } catch(e){ console.warn('tabunganRefresh error', e); }
+}
+
+// Refresh histori when tab becomes visible again (e.g. user was on /transactions page)
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible') tabunganRefresh();
+});
+
+/* Init chart on load */
+window.addEventListener('DOMContentLoaded', () => {
+  loadChart();
+  tabunganInit();
+});
+</script>
+</body>
+</html>

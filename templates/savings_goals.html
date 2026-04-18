@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html class="dark" lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Financial Architect – Savings Goals</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config={darkMode:"class",theme:{extend:{colors:{
+      "primary":"#00A86B","background":"#0A0A0A","surface":"#121212",
+      "surface-variant":"#1E1E1E","surface-container-high":"#2C2C2C",
+      "on-surface":"#e5e2e1","on-surface-variant":"#A0A0A0",
+      "outline-variant":"#2C2C2C","error":"#FF4D4D","warning":"#F59E0B",
+    },fontFamily:{headline:["Manrope","sans-serif"],body:["Inter","sans-serif"]}}}}
+  </script>
+  <style>
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle;}
+    body{font-family:'Manrope',sans-serif;}
+    .progress-glow{box-shadow:0 0 10px rgba(0,168,107,0.30);}
+    .card-hover{transition:transform .2s ease,box-shadow .2s ease;}
+    .card-hover:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.4);}
+    #toast{transition:opacity .4s ease,transform .4s ease;}
+    #toast.hidden-toast{opacity:0;transform:translateY(20px);pointer-events:none;}
+    .modal-overlay{background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);}
+  </style>
+</head>
+<body class="bg-background text-on-surface flex min-h-screen">
+
+<!-- SIDEBAR -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-background flex flex-col py-8 px-6 z-50" style="border-right:1px solid rgba(44,44,44,0.4);">
+  <div class="mb-10 px-4">
+    <h1 class="text-xl font-bold tracking-tight font-headline">Deinony Apps</h1>
+    <p class="text-[10px] font-bold tracking-widest text-on-surface/40 uppercase mt-1">By. Ade Aulia</p>
+  </div>
+  <nav class="flex-1 space-y-2">
+    <a href="/" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface/60 font-medium hover:bg-surface-variant hover:text-on-surface transition-all">
+      <span class="material-symbols-outlined text-sm">dashboard</span><span class="text-sm">Dashboard</span>
+    </a>
+    <a href="/transactions" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface/60 font-medium hover:bg-surface-variant hover:text-on-surface transition-all">
+      <span class="material-symbols-outlined text-sm">receipt_long</span><span class="text-sm">Transaksi</span>
+    </a>
+    <a href="/savings-goals" class="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all" style="color:#00A86B;background-color:rgba(0,168,107,0.10);font-weight:700;">
+      <span class="material-symbols-outlined text-sm">savings</span><span class="text-sm">Target Tabungan</span>
+    </a>
+  </nav>
+  <div class="mt-auto space-y-6">
+    <button onclick="openCreateModal()" class="w-full py-3 px-4 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center space-x-2">
+      <span class="material-symbols-outlined" style="font-size:18px;">add</span><span>Buat Goal Baru</span>
+    </button>
+    <div class="pt-6 space-y-2" style="border-top:1px solid rgba(44,44,44,0.4);">
+      <a href="#" class="flex items-center space-x-3 px-4 py-2 text-on-surface/60 font-medium hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-sm">settings</span><span class="text-sm">Pengaturan</span>
+      </a>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="flex-1 ml-64 min-h-screen">
+
+  <!-- Header -->
+  <header class="w-full px-10 py-8 flex items-center justify-between sticky top-0 z-40 bg-background/80 backdrop-blur-md" style="border-bottom:1px solid rgba(44,44,44,0.3);">
+    <div>
+      <h2 class="text-3xl font-bold font-headline">Target Tabungan</h2>
+      <p class="text-xs text-on-surface-variant mt-1">Semua goal tabungan kamu — aktif & selesai</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <div class="flex rounded-lg overflow-hidden" style="border:1px solid rgba(44,44,44,0.4);">
+        <button onclick="showTab('all')"       id="tab-all"       class="px-4 py-2 text-xs font-bold transition-colors bg-primary text-black">Semua</button>
+        <button onclick="showTab('active')"    id="tab-active"    class="px-4 py-2 text-xs font-bold transition-colors text-on-surface-variant hover:text-on-surface">Active</button>
+        <button onclick="showTab('completed')" id="tab-completed" class="px-4 py-2 text-xs font-bold transition-colors text-on-surface-variant hover:text-on-surface">Completed</button>
+        <button onclick="showTab('category')"  id="tab-category"  class="px-4 py-2 text-xs font-bold transition-colors text-on-surface-variant hover:text-on-surface">Kategori</button>
+      </div>
+      <!-- Import / Export Goals XLSX -->
+      <a href="/savings-goals/download"
+         class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors"
+         style="background:rgba(0,168,107,0.1);color:#00A86B;border:1px solid rgba(0,168,107,0.2);"
+         title="Download data goals sebagai .xlsx">
+        <span class="material-symbols-outlined" style="font-size:15px;">download</span>
+        <span>Export</span>
+      </a>
+      <label class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+             style="background:rgba(44,44,44,0.5);color:#e5e2e1;border:1px solid rgba(44,44,44,0.4);"
+             title="Upload file .xlsx untuk mengganti data goals"
+             onmouseover="this.style.background='rgba(44,44,44,0.8)'"
+             onmouseout="this.style.background='rgba(44,44,44,0.5)'">
+        <span class="material-symbols-outlined" style="font-size:15px;">upload</span>
+        <span>Import</span>
+        <form id="goals-upload-form" method="POST" action="/savings-goals/upload" enctype="multipart/form-data" class="hidden">
+          <input type="file" name="file" accept=".xlsx,.xls" onchange="this.form.submit()"/>
+        </form>
+        <script>
+          document.querySelector('label[title="Upload file .xlsx untuk mengganti data goals"]')
+            .addEventListener('click', function(e){
+              if(e.target.tagName !== 'INPUT') document.querySelector('#goals-upload-form input').click();
+            });
+        </script>
+      </label>
+      <div class="w-8 h-8 rounded-full overflow-hidden" style="border:1px solid rgba(44,44,44,0.6);">
+        <img class="w-full h-full object-cover" src="{{ data.user.avatar }}" alt=""/>
+      </div>
+    </div>
+  </header>
+
+  <div class="px-10 pb-10 pt-8 space-y-10">
+
+    {% if success %}
+    <div class="flex items-center space-x-3 px-5 py-4 rounded-xl" style="background:rgba(0,168,107,0.1);border:1px solid rgba(0,168,107,0.25);">
+      <span class="material-symbols-outlined text-primary">check_circle</span>
+      <p class="text-sm font-semibold text-primary">Berhasil mengimpor <strong>{{ success }}</strong> goals dari file Excel.</p>
+    </div>
+    {% endif %}
+    {% if error %}
+    <div class="flex items-center space-x-3 px-5 py-4 rounded-xl" style="background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.25);">
+      <span class="material-symbols-outlined text-error">error</span>
+      <p class="text-sm font-semibold text-error">{{ error }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Summary bar -->
+    <div class="grid grid-cols-3 gap-6">
+      <div class="bg-surface p-6 rounded-2xl" style="border:1px solid rgba(44,44,44,0.25);">
+        <p class="text-xs text-on-surface-variant mb-2">Total Goals</p>
+        <h3 class="text-3xl font-bold font-headline" id="stat-total">{{ active_goals|length + completed_goals|length }}</h3>
+      </div>
+      <div class="bg-surface p-6 rounded-2xl" style="border:1px solid rgba(44,44,44,0.25);">
+        <p class="text-xs text-on-surface-variant mb-2">Active</p>
+        <h3 class="text-3xl font-bold font-headline text-primary" id="stat-active">{{ active_goals|length }}</h3>
+      </div>
+      <div class="bg-surface p-6 rounded-2xl" style="border:1px solid rgba(44,44,44,0.25);">
+        <p class="text-xs text-on-surface-variant mb-2">Completed</p>
+        <h3 class="text-3xl font-bold font-headline" id="stat-completed">{{ completed_goals|length }}</h3>
+      </div>
+    </div>
+
+    <!-- ACTIVE GOALS -->
+    <section id="section-active">
+      <h3 class="text-lg font-bold font-headline mb-6 flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-primary inline-block"></span>
+        <span>Active Goals</span>
+        <span class="text-xs text-on-surface-variant font-normal ml-2">{{ active_goals|length }} goals</span>
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="active-grid">
+        {% for g in active_goals %}
+        <div class="bg-surface p-6 rounded-2xl card-hover" style="border:1px solid rgba(44,44,44,0.25);" data-goal-id="{{ g.id }}">
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(0,168,107,0.12);">
+                <span class="material-symbols-outlined text-primary" style="font-size:20px;">{{ g.icon }}</span>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold">{{ g.name }}</h4>
+                <p class="text-[10px] text-on-surface-variant">{{ g.category }}</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-1">
+              {% if g.days_left <= 7 %}
+              <span class="text-[9px] font-bold px-2 py-1 rounded-full" style="background:rgba(255,77,77,0.15);color:#FF4D4D;">{{ g.days_left }}d left</span>
+              {% elif g.days_left <= 14 %}
+              <span class="text-[9px] font-bold px-2 py-1 rounded-full" style="background:rgba(245,158,11,0.15);color:#F59E0B;">{{ g.days_left }}d left</span>
+              {% else %}
+              <span class="text-[9px] font-bold px-2 py-1 rounded-full" style="background:rgba(0,168,107,0.12);color:#00A86B;">{{ g.days_left }}d left</span>
+              {% endif %}
+              <!-- Action buttons -->
+              <button onclick="openEditModal({{ g.id }})" class="p-1 rounded-lg hover:bg-surface-variant transition-colors" title="Edit">
+                <span class="material-symbols-outlined text-on-surface-variant hover:text-primary" style="font-size:16px;">edit</span>
+              </button>
+              <button onclick="deleteGoal({{ g.id }}, '{{ g.name }}')" class="p-1 rounded-lg hover:bg-surface-variant transition-colors" title="Hapus">
+                <span class="material-symbols-outlined text-on-surface-variant hover:text-error" style="font-size:16px;">delete</span>
+              </button>
+            </div>
+          </div>
+          <div class="flex justify-between items-end mb-3">
+            <div>
+              <p class="text-[10px] text-on-surface-variant">Saved</p>
+              <p class="text-base font-bold">{{ g.saved_fmt }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] text-on-surface-variant">Target</p>
+              <p class="text-base font-bold text-on-surface-variant">{{ g.target_fmt }}</p>
+            </div>
+          </div>
+          <div class="w-full bg-surface-container-high h-2 rounded-full mb-2">
+            <div class="bg-primary h-full rounded-full progress-glow" style="width:{{ g.persen }}%;"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-bold">
+            <span class="text-primary">{{ g.persen }}%</span>
+            <span class="text-on-surface-variant">{{ g.remaining_fmt }} remaining</span>
+          </div>
+          <p class="text-[10px] text-on-surface-variant mt-4 flex items-center space-x-1">
+            <span class="material-symbols-outlined" style="font-size:12px;">calendar_today</span>
+            <span>Deadline: {{ g.deadline }}</span>
+          </p>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- COMPLETED GOALS -->
+    <section id="section-completed">
+      <h3 class="text-lg font-bold font-headline mb-6 flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-on-surface-variant inline-block"></span>
+        <span>Completed Goals</span>
+        <span class="text-xs text-on-surface-variant font-normal ml-2">{{ completed_goals|length }} goals</span>
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="completed-grid">
+        {% for g in completed_goals %}
+        <div class="p-6 rounded-2xl card-hover" style="background:#0f0f0f;border:1px solid rgba(44,44,44,0.2);" data-goal-id="{{ g.id }}">
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(44,44,44,0.6);">
+                <span class="material-symbols-outlined text-on-surface-variant" style="font-size:20px;">{{ g.icon }}</span>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-on-surface/70">{{ g.name }}</h4>
+                <p class="text-[10px] text-on-surface-variant">{{ g.category }}</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-1">
+              <span class="text-[9px] font-bold px-2 py-1 rounded-full flex items-center space-x-1" style="background:rgba(0,168,107,0.1);color:#00A86B;">
+                <span class="material-symbols-outlined" style="font-size:10px;font-variation-settings:'FILL' 1;">check_circle</span>
+                <span>Done</span>
+              </span>
+              <button onclick="deleteGoal({{ g.id }}, '{{ g.name }}')" class="p-1 rounded-lg hover:bg-surface-variant transition-colors" title="Hapus">
+                <span class="material-symbols-outlined text-on-surface-variant hover:text-error" style="font-size:16px;">delete</span>
+              </button>
+            </div>
+          </div>
+          <div class="flex justify-between items-end mb-3">
+            <div>
+              <p class="text-[10px] text-on-surface-variant">Total Saved</p>
+              <p class="text-base font-bold text-on-surface/70">{{ g.saved_fmt }}</p>
+            </div>
+          </div>
+          <div class="w-full bg-surface-container-high h-2 rounded-full mb-2">
+            <div class="h-full rounded-full" style="width:100%;background:#2C2C2C;"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-bold">
+            <span class="text-on-surface-variant">100% Achieved</span>
+            <span class="text-on-surface-variant">{{ g.deadline }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- CATEGORY SECTION -->
+    <section id="section-category" style="display:none;">
+      <h3 class="text-lg font-bold font-headline mb-6 flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-warning inline-block"></span>
+        <span>Dana per Kategori</span>
+        <span class="text-xs text-on-surface-variant font-normal ml-2">Berdasarkan Active Goals</span>
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {% for cat in categories %}
+        <div class="bg-surface p-6 rounded-2xl card-hover" style="border:1px solid rgba(44,44,44,0.25);">
+          <div class="flex justify-between items-center mb-4">
+            <h4 class="text-sm font-bold">{{ cat.category }}</h4>
+            <span class="text-[9px] font-bold px-2 py-1 rounded-full" style="background:rgba(0,168,107,0.12);color:#00A86B;">{{ cat.count }} goals</span>
+          </div>
+          <div class="mb-3">
+            <div class="flex justify-between text-[10px] mb-1">
+              <span class="text-on-surface-variant">Total Dana Tersimpan</span>
+              <span class="font-bold text-primary">{{ cat.persen }}%</span>
+            </div>
+            <div class="w-full bg-surface-container-high h-2 rounded-full">
+              <div class="bg-primary h-full rounded-full progress-glow" style="width:{{ cat.persen }}%;"></div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mt-4">
+            <div class="p-3 rounded-xl" style="background:#1A1A1A;border:1px solid rgba(44,44,44,0.3);">
+              <p class="text-[10px] text-on-surface-variant mb-1">Tersimpan</p>
+              <p class="text-xs font-bold text-primary">{{ cat.total_saved_fmt }}</p>
+            </div>
+            <div class="p-3 rounded-xl" style="background:#1A1A1A;border:1px solid rgba(44,44,44,0.3);">
+              <p class="text-[10px] text-on-surface-variant mb-1">Target</p>
+              <p class="text-xs font-bold">{{ cat.total_target_fmt }}</p>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- MODAL: CREATE GOAL -->
+<div id="modal-create" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay">
+  <div class="bg-surface rounded-2xl p-8 w-full max-w-lg shadow-xl" style="border:1px solid rgba(44,44,44,0.4);">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold font-headline">Buat Goal Baru</h3>
+      <button onclick="closeModal('modal-create')" class="text-on-surface-variant hover:text-on-surface">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <!-- Allocation meter -->
+    <div id="alloc-meter-wrap" class="mb-4 p-3 rounded-xl" style="background:rgba(0,168,107,0.05);border:1px solid rgba(0,168,107,0.15);">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Total Alokasi Savings</span>
+        <span id="alloc-total-pct" class="text-xs font-bold text-primary">0%</span>
+      </div>
+      <div class="w-full h-2 rounded-full" style="background:rgba(44,44,44,0.5);">
+        <div id="alloc-bar" class="h-full rounded-full transition-all" style="width:0%;background:#00A86B;"></div>
+      </div>
+      <p id="alloc-warning" class="hidden text-[10px] text-error mt-1.5 font-semibold">⚠ Total alokasi sudah 100%. Edit persen goal lain sebelum menambah alokasi baru.</p>
+      <p id="alloc-remain" class="text-[10px] text-on-surface-variant mt-1">Sisa kapasitas: <span id="alloc-sisa">100</span>%</p>
+    </div>
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Nama Goal</label>
+          <input id="c-name" type="text" placeholder="Contoh: Laptop Gaming" class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+        </div>
+        <div>
+          <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Kategori</label>
+          <select id="c-category" class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary">
+            <option>Elektronik</option><option>Wisata</option><option>Kendaraan</option>
+            <option>Properti</option><option>Pendidikan</option><option>Investasi</option>
+            <option>Asuransi</option><option>Lainnya</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Target (Rp)</label>
+          <input id="c-target" type="number" placeholder="Contoh: 15000000" class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+        </div>
+        <div>
+          <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Sudah Ditabung (Rp)</label>
+          <input id="c-saved" type="number" placeholder="0" class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Deadline</label>
+        <input id="c-deadline" type="date" class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+      </div>
+      <!-- persen_alokasi dari savings otomatis -->
+      <div class="p-4 rounded-xl" style="background:rgba(0,168,107,0.05);border:1px solid rgba(0,168,107,0.15);">
+        <div class="flex items-center space-x-2 mb-3">
+          <span class="material-symbols-outlined text-primary" style="font-size:16px;">pie_chart</span>
+          <label class="text-xs font-bold uppercase tracking-widest text-primary">Alokasi Otomatis dari Savings (Opsional)</label>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] text-on-surface-variant mb-1.5 uppercase tracking-widest font-bold">% dari Savings yang Dialokasikan</label>
+            <div class="relative">
+              <input id="c-persen-alokasi" type="number" min="0" max="100" placeholder="Contoh: 30"
+                     oninput="onPersenAlokasiChange()"
+                     class="w-full bg-surface-variant rounded-lg px-3 py-2.5 pr-8 text-on-surface text-xs border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xs font-bold">%</span>
+            </div>
+            <p id="c-persen-alokasi-warn" class="hidden text-[10px] text-error mt-1 font-semibold"></p>
+          </div>
+          <div>
+            <label class="block text-[10px] text-on-surface-variant mb-1.5 uppercase tracking-widest font-bold">Preview (dari total Savings)</label>
+            <div id="c-alloc-preview" class="w-full bg-surface-variant rounded-lg px-3 py-2.5 text-xs text-on-surface-variant">—</div>
+          </div>
+        </div>
+        <div class="mt-3 p-3 rounded-lg" style="background:rgba(0,168,107,0.06);border:1px solid rgba(0,168,107,0.1);">
+          <p class="text-[10px] text-on-surface-variant">Jika diisi, setiap kali ada transaksi <strong class="text-primary">Savings</strong> masuk, budget otomatis dialokasikan ke goal ini sesuai persentase yang dipilih. Goal tanpa nilai ini tidak mendapat alokasi otomatis.</p>
+        </div>
+        <!-- Legacy auto-fill (hidden now, kept for calcAutoSaved compat) -->
+        <input id="c-income-base" type="hidden"/>
+        <input id="c-persen" type="hidden"/>
+      </div>
+    </div>
+    <div class="flex space-x-3 mt-8">
+      <button onclick="closeModal('modal-create')" class="flex-1 py-3 rounded-lg text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors">Batal</button>
+      <button onclick="submitCreate()" class="flex-1 py-3 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition-opacity text-sm">Buat Goal</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT GOAL -->
+<div id="modal-edit" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay">
+  <div class="bg-surface rounded-2xl p-8 w-full max-w-lg shadow-xl" style="border:1px solid rgba(44,44,44,0.4);">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-bold font-headline">Edit Goal</h3>
+      <button onclick="closeModal('modal-edit')" class="text-on-surface-variant hover:text-on-surface">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <input type="hidden" id="e-id"/>
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Nama Goal</label>
+          <input id="e-name" type="text" class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+        </div>
+        <div>
+          <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Kategori</label>
+          <select id="e-category" class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary">
+            <option>Elektronik</option><option>Wisata</option><option>Kendaraan</option>
+            <option>Properti</option><option>Pendidikan</option><option>Investasi</option>
+            <option>Asuransi</option><option>Lainnya</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Target (Rp)</label>
+          <input id="e-target" type="number" class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+        </div>
+        <div>
+          <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Sudah Ditabung (Rp)</label>
+          <input id="e-saved" type="number" class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Deadline</label>
+        <input id="e-deadline" type="date" class="w-full bg-surface-variant rounded-lg px-4 py-3 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+      </div>
+      <!-- persen_alokasi edit -->
+      <div class="p-4 rounded-xl" style="background:rgba(0,168,107,0.05);border:1px solid rgba(0,168,107,0.15);">
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-bold uppercase tracking-widest text-primary flex items-center space-x-1.5">
+            <span class="material-symbols-outlined" style="font-size:15px;">pie_chart</span>
+            <span>Alokasi Otomatis dari Savings (%)</span>
+          </label>
+          <button type="button" onclick="document.getElementById('e-persen-alokasi').value=''; document.getElementById('e-persen-warn').classList.add('hidden');"
+                  class="text-[10px] text-on-surface-variant hover:text-error transition-colors">Hapus alokasi</button>
+        </div>
+        <div class="relative">
+          <input id="e-persen-alokasi" type="number" min="0" max="100" placeholder="Kosongkan jika tidak ingin alokasi otomatis"
+                 oninput="onEditPersenChange()"
+                 class="w-full bg-surface-variant rounded-lg px-4 py-3 pr-8 text-on-surface text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm font-bold">%</span>
+        </div>
+        <p id="e-persen-warn" class="hidden text-[10px] text-error mt-1 font-semibold"></p>
+        <p class="text-[10px] text-on-surface-variant mt-1.5">Total alokasi goals lain: <span id="e-other-total" class="font-bold text-primary">—</span>%  · Sisa: <span id="e-sisa-pct" class="font-bold">—</span>%</p>
+      </div>
+    </div>
+    <div class="flex space-x-3 mt-8">
+      <button onclick="closeModal('modal-edit')" class="flex-1 py-3 rounded-lg text-on-surface-variant font-bold text-sm hover:bg-surface-variant transition-colors">Batal</button>
+      <button onclick="submitEdit()" class="flex-1 py-3 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition-opacity text-sm">Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="fixed bottom-8 right-8 z-50 bg-surface-variant px-5 py-3 rounded-xl flex items-center space-x-3 shadow-xl hidden-toast" style="border:1px solid rgba(0,168,107,0.3);">
+  <span class="material-symbols-outlined text-primary text-sm" id="toast-icon">check_circle</span>
+  <span id="toast-msg" class="text-sm font-semibold"></span>
+</div>
+
+<script>
+function showTab(tab){
+  const active    = document.getElementById('section-active');
+  const completed = document.getElementById('section-completed');
+  const category  = document.getElementById('section-category');
+  ['all','active','completed','category'].forEach(t=>{
+    const btn=document.getElementById('tab-'+t);
+    btn.classList.remove('bg-primary','text-black');
+    btn.classList.add('text-on-surface-variant');
+  });
+  const btn=document.getElementById('tab-'+tab);
+  btn.classList.add('bg-primary','text-black');
+  btn.classList.remove('text-on-surface-variant');
+
+  active.style.display='none'; completed.style.display='none'; category.style.display='none';
+  if(tab==='all'){ active.style.display=''; completed.style.display=''; }
+  else if(tab==='active')   active.style.display='';
+  else if(tab==='completed') completed.style.display='';
+  else if(tab==='category')  category.style.display='';
+}
+
+// ── Allocation state ──────────────────────────────────────────────
+let _currentAllocTotal = 0; // loaded when modal opens
+let _editingGoalId = null;
+
+async function loadAllocTotal(excludeId=null){
+  try{
+    const res = await fetch('/api/goals/allocation-info');
+    const d   = await res.json();
+    _currentAllocTotal = d.total_allocated_pct || 0;
+    return _currentAllocTotal;
+  } catch(e){ return 0; }
+}
+
+function updateAllocMeter(extra=0){
+  const total = Math.min(100, _currentAllocTotal + extra);
+  const bar   = document.getElementById('alloc-bar');
+  const pctEl = document.getElementById('alloc-total-pct');
+  const warn  = document.getElementById('alloc-warning');
+  const sisa  = document.getElementById('alloc-sisa');
+  if(!bar) return;
+  bar.style.width = total + '%';
+  bar.style.background = total >= 100 ? '#FF4D4D' : '#00A86B';
+  pctEl.textContent = total.toFixed(1) + '%';
+  pctEl.style.color = total >= 100 ? '#FF4D4D' : '#00A86B';
+  const sisaVal = Math.max(0, 100 - _currentAllocTotal);
+  sisa.textContent = sisaVal.toFixed(1);
+  if(_currentAllocTotal >= 100){
+    warn.classList.remove('hidden');
+  } else {
+    warn.classList.add('hidden');
+  }
+}
+
+function onPersenAlokasiChange(){
+  const val  = parseFloat(document.getElementById('c-persen-alokasi').value)||0;
+  const warn = document.getElementById('c-persen-alokasi-warn');
+  const prev = document.getElementById('c-alloc-preview');
+  updateAllocMeter(val);
+  const sisa = Math.max(0, 100 - _currentAllocTotal);
+  if(val > 0){
+    if(_currentAllocTotal + val > 100){
+      warn.textContent = `Melebihi batas. Sisa: ${sisa.toFixed(1)}%`;
+      warn.classList.remove('hidden');
+    } else {
+      warn.classList.add('hidden');
+    }
+    prev.textContent = val.toFixed(1) + '% dari savings masuk';
+    prev.style.color = '#00A86B';
+  } else {
+    warn.classList.add('hidden');
+    prev.textContent = '—';
+    prev.style.color = '';
+  }
+}
+
+async function openCreateModal(){
+  document.getElementById('c-name').value='';
+  document.getElementById('c-target').value='';
+  document.getElementById('c-saved').value='';
+  document.getElementById('c-deadline').value='';
+  document.getElementById('c-persen-alokasi').value='';
+  document.getElementById('c-persen-alokasi-warn').classList.add('hidden');
+  document.getElementById('c-alloc-preview').textContent='—';
+  await loadAllocTotal();
+  updateAllocMeter(0);
+  document.getElementById('modal-create').classList.remove('hidden');
+}
+
+function calcAutoSaved(){
+  // kept for compat — no-op now
+}
+
+async function openEditModal(id){
+  try{
+    _editingGoalId = id;
+    const [res, allocRes] = await Promise.all([
+      fetch('/api/goals/'+id),
+      fetch('/api/goals/allocation-info')
+    ]);
+    const goal  = await res.json();
+    const alloc = await allocRes.json();
+    // total excluding this goal
+    const otherTotal = (alloc.total_allocated_pct||0) - (goal.persen_alokasi||0);
+    _currentAllocTotal = Math.max(0, otherTotal);
+    document.getElementById('e-id').value            = goal.id;
+    document.getElementById('e-name').value          = goal.name;
+    document.getElementById('e-category').value      = goal.category;
+    document.getElementById('e-target').value        = goal.target;
+    document.getElementById('e-saved').value         = goal.saved;
+    document.getElementById('e-deadline').value      = goal.deadline;
+    document.getElementById('e-persen-alokasi').value= goal.persen_alokasi != null ? goal.persen_alokasi : '';
+    document.getElementById('e-persen-warn').classList.add('hidden');
+    document.getElementById('e-other-total').textContent = _currentAllocTotal.toFixed(1);
+    document.getElementById('e-sisa-pct').textContent = Math.max(0, 100 - _currentAllocTotal).toFixed(1);
+    document.getElementById('modal-edit').classList.remove('hidden');
+  } catch(e){ showToast('Gagal memuat data goal','error'); }
+}
+
+function onEditPersenChange(){
+  const val  = parseFloat(document.getElementById('e-persen-alokasi').value)||0;
+  const warn = document.getElementById('e-persen-warn');
+  const sisa = Math.max(0, 100 - _currentAllocTotal);
+  if(val > 0 && val > sisa){
+    warn.textContent = `Melebihi batas. Sisa: ${sisa.toFixed(1)}%`;
+    warn.classList.remove('hidden');
+  } else {
+    warn.classList.add('hidden');
+  }
+}
+
+function closeModal(id){ document.getElementById(id).classList.add('hidden'); }
+
+async function submitCreate(){
+  const name    = document.getElementById('c-name').value.trim();
+  const category= document.getElementById('c-category').value;
+  const target  = parseInt(document.getElementById('c-target').value)||0;
+  const saved   = parseInt(document.getElementById('c-saved').value)||0;
+  const deadline= document.getElementById('c-deadline').value;
+  const paRaw   = document.getElementById('c-persen-alokasi').value.trim();
+  const persen_alokasi = paRaw !== '' ? parseFloat(paRaw) : null;
+  if(!name||!target||!deadline){ showToast('Lengkapi semua field','error'); return; }
+  if(persen_alokasi !== null){
+    if(persen_alokasi <= 0 || persen_alokasi > 100){ showToast('Persen alokasi harus antara 1–100','error'); return; }
+    const sisa = 100 - _currentAllocTotal;
+    if(persen_alokasi > sisa){ showToast(`Alokasi melebihi batas. Sisa: ${sisa.toFixed(1)}%`,'error'); return; }
+  }
+  try{
+    const res  = await fetch('/api/goals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,category,target,saved,deadline,persen_alokasi})});
+    const data = await res.json();
+    if(data.success){ showToast(data.message); closeModal('modal-create'); setTimeout(()=>location.reload(),800); }
+    else showToast(data.message,'error');
+  } catch(e){ showToast('Kesalahan jaringan','error'); }
+}
+
+async function submitEdit(){
+  const id      = parseInt(document.getElementById('e-id').value);
+  const name    = document.getElementById('e-name').value.trim();
+  const category= document.getElementById('e-category').value;
+  const target  = parseInt(document.getElementById('e-target').value)||0;
+  const saved   = parseInt(document.getElementById('e-saved').value)||0;
+  const deadline= document.getElementById('e-deadline').value;
+  if(!name||!target||!deadline){ showToast('Lengkapi semua field','error'); return; }
+  const epaRaw = document.getElementById('e-persen-alokasi').value.trim();
+  const persen_alokasi = epaRaw !== '' ? parseFloat(epaRaw) : null;
+  if(persen_alokasi !== null){
+    const sisa = Math.max(0, 100 - _currentAllocTotal);
+    if(persen_alokasi <= 0 || persen_alokasi > 100){ showToast('Persen alokasi harus antara 1–100','error'); return; }
+    if(persen_alokasi > sisa){ showToast(`Alokasi melebihi batas. Sisa: ${sisa.toFixed(1)}%`,'error'); return; }
+  }
+  try{
+    const res  = await fetch('/api/goals/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,category,target,saved,deadline,persen_alokasi})});
+    const data = await res.json();
+    if(data.success){ showToast(data.message); closeModal('modal-edit'); setTimeout(()=>location.reload(),800); }
+    else showToast(data.message,'error');
+  } catch(e){ showToast('Kesalahan jaringan','error'); }
+}
+
+async function deleteGoal(id, name){
+  if(!confirm(`Hapus goal "${name}"? Aksi ini tidak bisa dibatalkan.`)) return;
+  try{
+    const res  = await fetch('/api/goals/'+id,{method:'DELETE'});
+    const data = await res.json();
+    if(data.success){ showToast(data.message); setTimeout(()=>location.reload(),800); }
+    else showToast(data.message,'error');
+  } catch(e){ showToast('Kesalahan jaringan','error'); }
+}
+
+function showToast(msg,type='success'){
+  const t   = document.getElementById('toast');
+  const ic  = document.getElementById('toast-icon');
+  document.getElementById('toast-msg').textContent = msg;
+  ic.textContent = type==='success'?'check_circle':'error';
+  ic.style.color = type==='success'?'#00A86B':'#FF4D4D';
+  t.style.borderColor = type==='success'?'rgba(0,168,107,0.3)':'rgba(255,77,77,0.3)';
+  t.classList.remove('hidden-toast');
+  setTimeout(()=>t.classList.add('hidden-toast'),3500);
+}
+
+// Close modals on overlay click
+['modal-create','modal-edit'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) closeModal(id); });
+});
+</script>
+</body>
+</html>
