@@ -42,13 +42,13 @@ http://127.0.0.1:5000/
 ## 📸 Tampilan Aplikasi
 
 ### Halaman Utama
-![Halaman Utama](screenshots/1.png)
+![Halaman Utama](design/dashboard.png)
 
-### Upload Gambar Gigi
-![Upload Gambar](screenshots/2.png)
+### Data Transaksi
+![Data Transaksi](design/transaksi.png)
 
-### Hasil Prediksi
-![Hasil Prediksi](screenshots/3.png)
+### Target Tabungan
+![Target Tabungan](design/targetTabungan.png)
 
 ---
 
